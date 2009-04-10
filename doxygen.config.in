@@ -426,7 +426,7 @@ INPUT                  = src
 # *.c *.cc *.cxx *.cpp *.c++ *.java *.ii *.ixx *.ipp *.i++ *.inl *.h *.hh *.hxx *.hpp 
 # *.h++ *.idl *.odl *.cs *.php *.php3 *.inc *.m *.mm
 
-FILE_PATTERNS          = lwes_types.h lwes_emitter.h lwes_listener.h lwes_event.h lwes_event_type_db.h lwes_marshall_functions.h lwes_net_functions.h lwes_time_functions.h lwes_hash.h
+FILE_PATTERNS          = 
 
 # The RECURSIVE tag can be used to turn specify whether or not subdirectories 
 # should be searched for input files as well. Possible values are YES and NO. 
@@ -438,7 +438,7 @@ RECURSIVE              = NO
 # excluded from the INPUT source files. This way you can easily exclude a 
 # subdirectory from a directory tree whose root is specified with the INPUT tag.
 
-EXCLUDE                = src/config.h src/lwes.h src/lwes_esf_parser.h src/lwes_esf_parser_y.h
+EXCLUDE                =
 
 # The EXCLUDE_SYMLINKS tag can be used select whether or not files or directories 
 # that are symbolic links (a Unix filesystem feature) are excluded from the input.
@@ -1152,4 +1152,3 @@ DOT_CLEANUP            = YES
 
 SEARCHENGINE           = NO
 
-# Created by skeletor version 2.1.1

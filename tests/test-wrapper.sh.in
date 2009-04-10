@@ -7,8 +7,8 @@ stripcommand=`echo "$command" | sed 's/testwrapper-//'`
 "$stripcommand" "$@" || exit $?
 
 if test "x@ENABLE_COVERAGE@" = "x1"; then
-  # linux: 97.67% of 86 lines executed in file ../src/comaofferca.h
-  # bsd: 100.00% of 196 source lines executed in file testbimap.c
+  # linux: 97.67% of 86 lines executed in file ../src/file.h
+  # bsd: 100.00% of 196 source lines executed in file testabc.c
 
   extrastripcommand=`echo "$stripcommand" | sed 's/\.\///'`
     ${GCOV:-gcov} "$extrastripcommand" 2>&1                        \
@@ -56,4 +56,3 @@ if test "x@ENABLE_COVERAGE@" = "x1"; then
   exit 0
 fi
 
-# Created by skeletor version %%%%_SKELETOR_VERSION_%%%%

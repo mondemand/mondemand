@@ -10,4 +10,3 @@ Requires:
 Libs: -L${libdir} -l@PACKAGE_NAME@
 Cflags: -I${includedir}/@PACKAGE_NAME@-@MAJOR_VERSION@
 
-# Created by skeletor version 2.1.1
