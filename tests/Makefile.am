@@ -18,11 +18,19 @@ mymaintainercleanfiles =
 
 # list of test programs, in dependency order
 
-mytests =
+mytests = \
+          testmem \
+          testmondemandlib
 
 # list of test scripts, in dependency order
 
 myscripttests =
+
+testmem_SOURCES = testmem.c
+testmem_LDADD =
+
+testmondemandlib_SOURCES = testmondemandlib.c
+testmondemandlib_LDADD = ../src/mem.o
 
 # END: Variables to change
 # past here, hopefully, there is no need to edit anything

@@ -18,7 +18,7 @@ mymaintainercleanfiles = config.h.in
 
 # list of public library header files
 
-myheaderfiles =
+myheaderfiles = mondemandlib.h
 
 # list of private library header files
 # these aren't installed or listed in the library common header
@@ -32,7 +32,9 @@ mybaseincludeheader = @PACKAGEPACKED@.h
 
 # list of source files comprising shared library
 
-mysourcefiles =
+mysourcefiles = \
+                mem.c \
+                mondemandlib.c
 
 # sigh ... automake/autoconf/libtool is not smart enough to handle AC_SUBST
 # for libtool library names, so you have to fill this out yourself
