@@ -1,2 +1,64 @@
-mondemand : a library for logging messages and statistics to the network
+MonDemand : a library for logging messages and statistics to the network
+
+Introduction
+------------
+
+The MonDemand library is a library for logging messages and statistics to the
+network.  By default it uses the Light Weight Event System 
+(http://www.lwes.org); however, developers can modify MonDemand to use
+the mechanism and protocol of their choice.  This data stream can be
+examined by developers and administrators to determine the health and
+runtime status of systems using the library.
+
+Initialization
+--------------
+
+The first step to using MonDemand is to initialize a client object:
+
+  client = mondemand_client_create (...)
+
+This should be done at program initialization.
+
+Appendix: Event Format
+----------------------
+
+If using the Light Weight Event System, here are the ESF entries for the two
+types of messages sent by MonDemand.
+
+MonDemand::LogMessage
+{
+  string prog_id;    # program identifier
+
+  uint16 num;        # number of log messages in this event
+
+  string f0;         # filename or class logging this message
+  uint32 l0;         # line number of the calling filename or class
+  uint32 p0;         # priority / log level
+  string m0;         # the actual message
+  uint16 r0;         # repeat count; used if the client detects repeats
+  # repeated for num entries
+
+  uint16 ctxt_num;   # number of contextual key/value dimensions
+
+  string ctxt_k0;    # name of contextual metadata
+  string ctxt_v0;    # value of contextual metadata
+  # repeated for the number of repeated contextual key/value pairs
+}
+
+MonDemand::StatsMsg
+{
+  string prog_id;    # program identifier
+
+  uint16 num;        # number of stats messages in this event
+  
+  string k0;         # name of the 0th counter
+  int64  v0;         # value of the 0th counter
+  # repeated for num entries
+
+  uint16 ctxt_num;   # number of contextual key/value dimensions
+
+  string ctxt_k0;    # name of contextual metadata
+  string ctxt_v0;    # value of contextual metadata
+  # repeated for the number of contextual key/value pairs
+}
 
