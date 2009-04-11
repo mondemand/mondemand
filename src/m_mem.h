@@ -1,7 +1,7 @@
-#ifndef __MEM_H__
-#define __MEM_H__
+#ifndef __M_MEM_H__
+#define __M_MEM_H__
 
-/*! \file mem.h
+/*! \file m_mem.h
  *  \brief Memory management routines.  Some prototypes are copied from glib,
  *         but we don't link to glib in case a user doesn't want to have to
  *         link to glib in their program.

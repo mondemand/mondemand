@@ -19,24 +19,24 @@ void *my_malloc(size_t size)
   return ret;
 }
 
-#define malloc my_malloc
-#include "m_mem.c"
-#undef malloc
+#define m_try_malloc0 my_malloc
+#include "m_hash.c"
+#undef m_try_malloc0
 
 int
 main(void)
 {
-  void *ptr = NULL;
+  struct m_hash_table *hash_table;
 
-  /* these should fail/return 0 */
   malloc_fail = 1;
-  ptr = m_try_malloc(1024);
-  ptr = m_try_malloc0(1024);
-  m_free(ptr);
+  hash_table = m_hash_table_create();
+  assert( hash_table == NULL );
 
   malloc_fail = 0;
-  ptr = (void *) m_try_malloc0(1024);
-  m_free(ptr);
+  hash_table = m_hash_table_create();
+  m_hash_table_destroy(hash_table);
+
+  m_hash_table_destroy(NULL);
 
   return 0;
 }

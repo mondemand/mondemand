@@ -20,6 +20,7 @@ mymaintainercleanfiles =
 
 mytests = \
           testmem \
+          testhash \
           testmondemandlib
 
 # list of test scripts, in dependency order
@@ -29,8 +30,11 @@ myscripttests =
 testmem_SOURCES = testmem.c
 testmem_LDADD =
 
+testhash_SOURCES = testhash.c
+testhash_LDADD = ../src/m_mem.o
+
 testmondemandlib_SOURCES = testmondemandlib.c
-testmondemandlib_LDADD = ../src/mem.o
+testmondemandlib_LDADD = ../src/m_mem.o
 
 # END: Variables to change
 # past here, hopefully, there is no need to edit anything

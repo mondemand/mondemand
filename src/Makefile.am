@@ -33,7 +33,8 @@ mybaseincludeheader = @PACKAGEPACKED@.h
 # list of source files comprising shared library
 
 mysourcefiles = \
-                mem.c \
+                m_mem.c \
+                m_hash.c \
                 mondemandlib.c
 
 # sigh ... automake/autoconf/libtool is not smart enough to handle AC_SUBST

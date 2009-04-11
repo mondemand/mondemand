@@ -1,30 +1,27 @@
 
-#include "mem.h"
+#include "m_mem.h"
 #include "mondemandlib.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-/*
- * Internal client structure, hidden from the header.
- */
-struct _MonDemandClient
-{
-  char *prog_id;
-  int immediate_send_level;
-  int no_send_level;
-};
-
 /* ======================================================================== */
 /* Public API functions                                                     */
 /* ======================================================================== */
 
-MonDemandClient *
+struct mondemand_client *
 mondemand_client_create(const char *program_identifier)
 {
-  MonDemandClient *client = NULL;
+  struct mondemand_client *client = NULL;
 
-  client = (MonDemandClient *) m_try_malloc0(sizeof(MonDemandClient));
+  /* if the prog_id is null, don't continue. */
+  if( program_identifier == NULL )
+  {
+    return NULL;
+  }
+
+  client = (struct mondemand_client *) 
+            m_try_malloc0(sizeof(struct mondemand_client));
 
   if( client != NULL)
   {
@@ -37,7 +34,7 @@ mondemand_client_create(const char *program_identifier)
 }
 
 void
-mondemand_client_destroy(MonDemandClient *client)
+mondemand_client_destroy(struct mondemand_client *client)
 {
   if( client != NULL )
   {
@@ -47,7 +44,7 @@ mondemand_client_destroy(MonDemandClient *client)
 }
 
 void
-mondemand_client_set_immediate_send_level(MonDemandClient *client,
+mondemand_client_set_immediate_send_level(struct mondemand_client *client,
                                           const int level)
 {
   if( client != NULL )
@@ -55,6 +52,19 @@ mondemand_client_set_immediate_send_level(MonDemandClient *client,
     if( level >= M_LOG_EMERG && level <= M_LOG_ALL )
     {
       client->immediate_send_level = level;
+    }
+  }
+}
+
+void
+mondemand_client_set_no_send_level(struct mondemand_client *client,
+                                   const int level)
+{
+  if( client != NULL )
+  {
+    if( level >= M_LOG_EMERG && level <= M_LOG_ALL )
+    {
+      client->no_send_level = level;
     }
   }
 }

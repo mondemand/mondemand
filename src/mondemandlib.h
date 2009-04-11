@@ -22,42 +22,61 @@
 #define M_LOG_DEBUG       7       /* debug-level messages */
 #define M_LOG_ALL         8       /* all messages, including traces */
 
-/*! \var typedef struct _mondemand_client mondemand_client
- *  \brief A type definition for a mondemand_client structure.
- * 
- *  Forward declaration.
+/*! \struct mondemand_client
+ *  \brief A definition for a mondemand_client structure.
  */
-
-typedef struct _MonDemandClient MonDemandClient;
+struct mondemand_client
+{
+  /* program identifier */
+  char *prog_id;
+  /* minimum log level at which to send events immediately */
+  int immediate_send_level;
+  /* minimum log level at which to send events at all */
+  int no_send_level;
+};
 
 /*!\fn mondemand_client_create(const char *program_identifier)
  * \brief Constructor used to create a new logging client.
  *
  * \param program_identifier a string identifying this program to the network
- * \return a MonDemandClient object pointer
+ * \return a mondemand_client object pointer
  */
-MonDemandClient *mondemand_client_create(const char *program_identifier);
+struct mondemand_client *
+mondemand_client_create(const char *program_identifier);
 
 
-/*!\fn mondemand_client_destroy(MonDemandClient *client)
+/*!\fn mondemand_client_destroy(mondemand_client *client)
  *
  * \brief Destructor, used to clean up memory used by the client.  This
  *        automatically flushes any unsent events.
  *
- * \param MonDemandClient client object to be deleted.
+ * \param client mondemand_client object to be deleted.
  */
-void mondemand_client_destroy(MonDemandClient *client);
+void mondemand_client_destroy(struct mondemand_client *client);
 
-/*!\fn mondemand_client_set_immediate_send_level(MonDemandClient *client,
- *                                               const int level)
+/*!\fn mondemand_client_set_immediate_send_level
+ *       (struct mondemand_client *client, const int level)
  * \brief Method to set the immediate send level, which defines the minimum
  *        level where events are sent as soon as they are received (as
  *        opposed to being bundled).  Out of range values are ignored.
- * \param client a MonDemandClient object pointer
+ * \param client a mondemand_client object pointer
  * \param level  a log level
  */
-void mondemand_client_set_immediate_send_level(MonDemandClient *client,
-                                               const int level);
+void
+mondemand_client_set_immediate_send_level(struct mondemand_client *client,
+                                          const int level);
+
+/*!\fn mondemand_client_set_no_send_level(struct mondemand_client *client,
+ *                                        const int level)
+ * \brief Method to set the no send level, which defines the minimum log level
+ *        where events are sent at all.  Anything lower than this defined
+ *        level will be suppressed.  Out of range values are ignored.
+ * \param client a mondemand_client object pointer
+ * \param level  a log level
+ */
+void
+mondemand_client_set_no_send_level(struct mondemand_client *client,
+                                   const int level);
 
 
 #endif /* __MONDEMAND_H_ */
