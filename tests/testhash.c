@@ -34,6 +34,7 @@ main(void)
   char *key = NULL;
   char *value = NULL;
   char *test_value = NULL;
+  const char **keys = NULL;
   char buf[1024];
 
   /* try a memory allocation error */
@@ -119,6 +120,17 @@ main(void)
     value = strdup("a grip of data is a lot");
     m_hash_table_set(hash_table, key, value);
   }
+
+  /* get a list of the keys */
+  m_hash_table_keys(NULL);
+  keys = m_hash_table_keys(hash_table);
+  for( i=0; keys[i] != NULL; ++i )
+  {
+    assert( keys[i] != NULL );
+    keys[i] = NULL;
+  }
+  assert( i == 1000 );
+  free(keys);
 
   /* start a little higher so the bucket search finds nothing */
   for( i=1010; i>=0; --i )

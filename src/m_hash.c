@@ -220,6 +220,40 @@ m_hash_table_remove_all(struct m_hash_table *hash_table)
   }
 }
 
+/* return an immutable list of keys */
+const char **
+m_hash_table_keys(struct m_hash_table *hash_table)
+{
+  int i=0;
+  int j=0;
+  char **keys = NULL;
+  struct m_hash_node *iterator = NULL;
+
+  if( hash_table != NULL )
+  {
+    keys = (char **) m_try_malloc0( sizeof(char *) * (hash_table->num + 1) ); 
+
+    if( keys != NULL )
+    {
+      for( i=0; i<hash_table->size; ++i )
+      {
+        iterator = hash_table->nodes[i];
+        while( iterator != NULL )
+        {
+          keys[j++] = (char *) iterator->key;
+          iterator = iterator->next;
+        } 
+      }
+      keys[j] = NULL;
+
+      return (const char **) keys;
+    }
+  } /* if( hash_table != NULL ) */
+
+  return NULL;
+}
+
+
 /* ======================================================================== */
 /* Private API functions                                                     */
 /* ======================================================================== */

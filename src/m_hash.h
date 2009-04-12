@@ -32,6 +32,15 @@ struct m_hash_table
   void **nodes;
 };
 
+/*! \struct m_hash_iterator
+ *  \brief  Structure for iterating through the hash.
+ */
+struct m_hash_iterator
+{
+  int index;
+  struct m_hash_node *current;
+};
+
 /*!\fn struct m_hash_table *m_hash_table_destroy(void)
  * \brief creates a hash table.
  */
@@ -64,5 +73,14 @@ void m_hash_table_remove(struct m_hash_table *hash_table, const char *key);
  * \brief removes all the elements.
  */
 void m_hash_table_remove_all(struct m_hash_table *hash_table);
+
+/*!\fn char **m_hash_table_keys(struct m_hash_table *hash_table)
+ * \brief returns an array of char * elements representing the keys in the
+ *        hash table.  The last element is NULL to mark the end of the
+ *        array.  The list must be freed after usage to prevent memory
+ *        leaks.
+ */
+const char **
+m_hash_table_keys(struct m_hash_table *hash_table);
 
 #endif
