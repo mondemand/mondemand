@@ -81,17 +81,33 @@ mondemand_client_set_no_send_level(struct mondemand_client *client,
 }
 
 /* returns the value for a given key */
-char *
+const char *
 mondemand_client_get_context(struct mondemand_client *client,
                              const char *key)
 {
-  char *ret = NULL;
+  const char *ret = NULL;
 
   if( client != NULL && key != NULL )
   {
     if( client->contexts != NULL )
     {
       ret = m_hash_table_get( client->contexts, key );
+    }
+  }
+
+  return ret;
+}
+
+const char **
+mondemand_client_get_context_keys(struct mondemand_client *client)
+{
+  const char **ret = NULL;
+
+  if( client != NULL )
+  {
+    if( client->contexts != NULL ) 
+    {
+      ret = m_hash_table_keys( client->contexts );
     }
   }
 

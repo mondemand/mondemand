@@ -82,13 +82,21 @@ void
 mondemand_client_set_no_send_level(struct mondemand_client *client,
                                    const int level);
 
-/*!\fn char *mondemand_client_get_context(struct mondemand_client *client,
+/*!\fn const char *mondemand_client_get_context(struct mondemand_client *client,
  *                                        const char *key)
  * \brief Returns the value for a given key.
  */
-char *
+const char *
 mondemand_client_get_context(struct mondemand_client *client,
                              const char *key);
+
+/*!\fn const char **mondemand_client_get_context_keys(
+ *         struct mondemand_client *client)
+ * \brief returns an array of keys.  The array is NULL terminated, and must
+ *        be freed by the caller when finished with it.
+ */
+const char **
+mondemand_client_get_context_keys(struct mondemand_client *client);
 
 /*!\fn mondemand_client_set_context(struct mondemand_client *client,
  *                                  const char *key, const char *value)

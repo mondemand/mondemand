@@ -43,7 +43,8 @@ int
 main(void)
 {
   int i=0;
-  char *data = NULL;
+  const char *data = NULL;
+  const char **list = NULL;
   struct mondemand_client *client = NULL;
   char buf[512];
 
@@ -114,6 +115,10 @@ main(void)
   /* get some of the data that isn't there */
   data = mondemand_client_get_context(client, "grip-101");
   assert( data == NULL );
+
+  /* get a list of keys */
+  list = mondemand_client_get_context_keys(client); 
+  free(list);
 
   /* overwrite some of it */
   mondemand_client_set_context(client, "grip-200", "new value");
