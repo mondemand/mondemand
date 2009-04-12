@@ -7,6 +7,8 @@
  *         transport.
  */
 
+#include "m_hash.h"
+
 #include <stdarg.h>
 
 /*
@@ -33,6 +35,8 @@ struct mondemand_client
   int immediate_send_level;
   /* minimum log level at which to send events at all */
   int no_send_level;
+  /* hashtable of contextual data */
+  struct m_hash_table *contexts;
 };
 
 /*!\fn mondemand_client_create(const char *program_identifier)
@@ -78,6 +82,21 @@ void
 mondemand_client_set_no_send_level(struct mondemand_client *client,
                                    const int level);
 
+/*!\fn mondemand_client_set_context(struct mondemand_client *client,
+ *                                  const char *key, const char *value)
+ * \brief Sets a contextual key/value pair to the client, which is sent
+ *        out with event event.  If a value is already set, it overwrites it.
+ */
+void
+mondemand_client_set_context(struct mondemand_client *client,
+                             const char *key, const char *value);
+
+/*!\fn mondemand_client_remove_all_contexts(struct mondemand_client *client)
+ * \brief Method to remove all contextual key/value pairs.
+ * \aram client a mondemand_client object pointer
+ */
+void
+mondemand_client_remove_all_contexts(struct mondemand_client *client);
 
 #endif /* __MONDEMAND_H_ */
 
