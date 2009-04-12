@@ -82,17 +82,34 @@ void
 mondemand_client_set_no_send_level(struct mondemand_client *client,
                                    const int level);
 
+/*!\fn char *mondemand_client_get_context(struct mondemand_client *client,
+ *                                        const char *key)
+ * \brief Returns the value for a given key.
+ */
+char *
+mondemand_client_get_context(struct mondemand_client *client,
+                             const char *key);
+
 /*!\fn mondemand_client_set_context(struct mondemand_client *client,
  *                                  const char *key, const char *value)
  * \brief Sets a contextual key/value pair to the client, which is sent
  *        out with event event.  If a value is already set, it overwrites it.
+ *        This method creates a copy of the key and value internally, so
+ *        they can be freed once set.
  */
 void
 mondemand_client_set_context(struct mondemand_client *client,
                              const char *key, const char *value);
 
+/*!\fn mondemand_client_remove_context(struct mondemand_client *client,
+ *                                     const char *key);
+ * \brief Removes a contextual key value pair from the client, and
+ *        frees that memory.
+ */
+
 /*!\fn mondemand_client_remove_all_contexts(struct mondemand_client *client)
- * \brief Method to remove all contextual key/value pairs.
+ * \brief Method to remove all contextual key/value pairs.  Frees all
+ *        related memory.
  * \aram client a mondemand_client object pointer
  */
 void

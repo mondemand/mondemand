@@ -43,6 +43,7 @@ int
 main(void)
 {
   int i=0;
+  char *data = NULL;
   struct mondemand_client *client = NULL;
   char buf[512];
 
@@ -102,9 +103,22 @@ main(void)
     mondemand_client_set_context(client, buf, "this is a grip of data");
   }
 
+  /* fetch some of them */
+  data = mondemand_client_get_context(client, "grip-100");
+  assert( strcmp(data, "this is a grip of data") == 0 );
+
   /* remove some of them */
   mondemand_client_remove_context(client, "grip-101");
   mondemand_client_remove_context(client, "grip-381");
+
+  /* get some of the data that isn't there */
+  data = mondemand_client_get_context(client, "grip-101");
+  assert( data == NULL );
+
+  /* overwrite some of it */
+  mondemand_client_set_context(client, "grip-200", "new value");
+  data = mondemand_client_get_context(client, "grip-200");
+  assert( strcmp(data, "new value") == 0 ); 
 
   /* remove the rest */
   mondemand_client_remove_all_contexts(client);
