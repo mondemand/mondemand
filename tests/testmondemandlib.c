@@ -8,19 +8,31 @@
 #include <string.h>
 
 #include "m_hash.h"
+#include "m_mem.h"
 
 /* wrap malloc to cause memory problems */
 static int malloc_fail = 0;
+
+void *my_malloc0(size_t size)
+{
+  void *ret = NULL;
+  if( malloc_fail == 0 )
+  {
+    ret = m_try_malloc0(size);
+  }
+  return ret;
+}
 
 void *my_malloc(size_t size)
 {
   void *ret = NULL;
   if( malloc_fail == 0 )
   {
-    ret = malloc(size);
+    ret = m_try_malloc(size);
   }
   return ret;
 }
+
 
 /* wrap strdup to cause memory problems */
 static int strdup_fail = 0;
@@ -48,11 +60,13 @@ my_m_hash_table_set(struct m_hash_table *hash_table, char *key, void *value)
 }
 
 
-#define m_try_malloc0 my_malloc
+#define m_try_malloc0 my_malloc0
+#define m_try_malloc my_malloc
 #define strdup my_strdup
 #define m_hash_table_set my_m_hash_table_set
 #include "mondemandlib.c"
 #undef m_try_malloc0
+#undef m_try_malloc
 #undef strdup
 #undef m_hash_table_set
 
@@ -199,13 +213,29 @@ main(void)
   malloc_fail = 1;
   mondemand_log_real(client, __FILE__, __LINE__, M_LOG_INFO,
                      MONDEMAND_NULL_TRACE_ID, "memoryerrors");
-  malloc_fail = -1;
+  malloc_fail = 0;
 
+  /* change some stats */
+  mondemand_stats_inc(client, __FILE__, __LINE__, "speed", 999999);
+  mondemand_stats_inc(client, __FILE__, __LINE__, NULL, 11111);
+  mondemand_stats_inc(client, __FILE__, __LINE__, "speed", 111111);
+  mondemand_stats_dec(client, __FILE__, __LINE__, "speed", 111111);
+  mondemand_stats_set(client, __FILE__, __LINE__, "speed", 888888);
+  mondemand_stats_set(client, __FILE__, __LINE__, NULL, 101010);
+
+  malloc_fail = 1;
+  mondemand_stats_inc(client, __FILE__, __LINE__, "failboat", 101);
+  mondemand_stats_set(client, __FILE__, __LINE__, "foolgle", 404);
+  malloc_fail = 0;
+
+  m_hash_fail = 1;
+  mondemand_stats_inc(client, __FILE__, __LINE__, "failwhale", 202);
+  mondemand_stats_set(client, __FILE__, __LINE__, "windoesnot", 500);
+  m_hash_fail = 0;
 
   /* free it up */
   mondemand_client_destroy(client);
 
   return 0;
 }
-
 

@@ -24,6 +24,8 @@ struct mondemand_client
   struct m_hash_table *contexts;
   /* hashtable of log messages, keyed by 'filename:line' */
   struct m_hash_table *messages;
+  /* hashtable of stats */
+  struct m_hash_table *stats;
 };
 
 
@@ -45,6 +47,14 @@ struct m_log_message
   char message[M_MESSAGE_MAX+1];
   struct mondemand_trace_id trace_id;
 };
+
+
+/* an internal structure for handilng counters */
+#if HAVE_LONG_LONG
+typedef long long MStatCounter;
+#else
+typedef long MStatCounter;
+#endif
 
 
 /* ======================================================================== */
@@ -72,6 +82,7 @@ mondemand_client_create(const char *program_identifier)
     client->no_send_level = M_LOG_NOTICE;
     client->contexts = m_hash_table_create();
     client->messages = m_hash_table_create();
+    client->stats = m_hash_table_create();
 
     /* if any of the memory allocation has failed, bail out */
     if( client->prog_id == NULL || client->contexts == NULL 
@@ -93,6 +104,7 @@ mondemand_client_destroy(struct mondemand_client *client)
     m_free(client->prog_id);
     m_hash_table_destroy(client->contexts);
     m_hash_table_destroy(client->messages);
+    m_hash_table_destroy(client->stats);
     m_free(client);
   }
 }
@@ -350,7 +362,116 @@ mondemand_log_real_va(struct mondemand_client *client,
   return 0;
 }
 
+/* increment the value pointed at by key 'key' */
+int
+mondemand_stats_inc(struct mondemand_client *client, const char *filename,
+                    const int line, const char *key, const int value)
+{
+  char buffer[FILENAME_MAX * 3];
+  const char *real_key = key;
+  char *new_key = NULL;
+  MStatCounter *counter = NULL;
+
+  /* the client must not be null, and either the filename or key must be set */
+  if( client != NULL &&
+      (filename != NULL || key != NULL) )
+  {
+    /* if the key wasn't set, use the filename+line number */
+    if( real_key == NULL )
+    {
+      snprintf(buffer, FILENAME_MAX*2, "%s:%d", (char *) filename, line);
+      real_key = buffer;
+    }
+
+    counter = m_hash_table_get( client->stats, real_key );
+
+    if( counter == NULL )
+    { 
+      /* create a new entry */
+      new_key = strdup(real_key);
+      counter = (MStatCounter *) m_try_malloc( sizeof(MStatCounter) );
+      if( counter == NULL || new_key == NULL )
+      {
+        /* malloc failed */
+        free(new_key);
+        free(counter);
+        return -3;
+      } else {
+        *counter = value;
+        if( m_hash_table_set( client->stats, new_key, counter ) != 0 )
+        {
+          free(new_key);
+          free(counter);
+          return -3;
+        }
+      }
+    } else {
+      /* we found the entry, simply increment */
+      *counter += value;
+    }
+  }
+
+  return 0;
+}
+
+int
+mondemand_stats_dec(struct mondemand_client *client, const char *filename,
+                    const int line, const char *key, const int value)
+{
+  return mondemand_stats_inc(client, filename, line, key, value * (-1));
+}
+
+int
+mondemand_stats_set(struct mondemand_client *client, const char *filename,
+                    const int line, const char *key, const int value)
+{
+  char buffer[FILENAME_MAX * 3];
+  const char *real_key = key;
+  char *new_key = NULL;
+  MStatCounter *counter = NULL;
+
+  /* the client must not be null, and either the filename or key must be set */
+  if( client != NULL &&
+      (filename != NULL || key != NULL) )
+  {
+    /* if the key wasn't set, use the filename+line number */
+    if( real_key == NULL )
+    {
+      snprintf(buffer, FILENAME_MAX*2, "%s:%d", (char *) filename, line);
+      real_key = buffer;
+    }
+
+    counter = m_hash_table_get( client->stats, real_key );
+
+    if( counter == NULL )
+    { 
+      /* create a new entry */
+      new_key = strdup(real_key);
+      counter = (MStatCounter *) m_try_malloc( sizeof(MStatCounter) );
+      if( counter == NULL || new_key == NULL )
+      {
+        /* malloc failed */
+        free(new_key);
+        free(counter);
+        return -3;
+      } else {
+        *counter = value;
+        if( m_hash_table_set( client->stats, new_key, counter ) != 0 )
+        {
+          free(new_key);
+          free(counter);
+          return -3;
+        }
+      }
+    } else {
+      /* we found the entry, simply increment */
+      *counter = value;
+    }
+  }
+
+  return 0;
+}
+
+
 /*========================================================================*/
 /* Private functions                                                      */
-/*========================================================================*/
-

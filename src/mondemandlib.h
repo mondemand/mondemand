@@ -7,9 +7,18 @@
  *         transport.
  */
 
+#include "config.h"
 #include "m_hash.h"
 
 #include <stdarg.h>
+
+#ifdef __cplusplus
+#define HAVE_ISO_VARARGS HAVE_ISO_CXX_VARARGS
+#define HAVE_GNUC_VARARGS HAVE_GNUC_CXX_VARARGS
+#else
+#define HAVE_ISO_VARARGS HAVE_ISO_C_VARARGS
+#define HAVE_GNUC_VARARGS HAVE_GNUC_C_VARARGS
+#endif
 
 /*
  * priorities map to the syslog priorities.
@@ -23,6 +32,10 @@
 #define M_LOG_INFO        6       /* informational */
 #define M_LOG_DEBUG       7       /* debug-level messages */
 #define M_LOG_ALL         8       /* all messages, including traces */
+
+/* convenience */
+#define M_LOG_WARN M_LOG_WARNING
+#define M_LOG_ERROR M_LOG_ERR
 
 
 /* forward declaration of opaque structs */
@@ -161,7 +174,71 @@ int mondemand_flush(struct mondemand_client *client);
 /* Useful Macros                                                       */
 /*=====================================================================*/
 
+#if HAVE_ISO_VARARGS
 
+/* macros for ISO style varargs */
+
+#define mondemand_log(m, level, tid, ...) \
+  mondemand_log_real(m, __FILE__, __LINE__, level, tid, __VA_ARGS__)
+
+#define mondemand_emerg(m, tid, ...) \
+  mondemand_log_real(m, __FILE__, __LINE__, M_LOG_EMERG, tid, __VA_ARGS__)
+
+#define mondemand_alert(m, tid, ...) \
+  mondemand_log_real(m, __FILE__, __LINE__, M_LOG_ALERT, tid, __VA_ARGS__)
+
+#define mondemand_crit(m, tid, ...) \
+  mondemand_log_real(m, __FILE__, __LINE__, M_LOG_CRIT, tid, __VA_ARGS__)
+
+#define mondemand_error(m, tid, ...) \
+  mondemand_log_real(m, __FILE__, __LINE__, M_LOG_ERR, tid, __VA_ARGS__)
+
+#define mondemand_warning(m, tid, ...) \
+  mondemand_log_real(m, __FILE__, __LINE__, M_LOG_WARNING, tid, __VA_ARGS__)
+
+#define mondemand_notice(m, tid, ...) \
+  mondemand_log_real(m, __FILE__, __LINE__, M_LOG_NOTICE, tid, __VA_ARGS__)
+
+#define mondemand_info(m, tid, ...) \
+  mondemand_log_real(m, __FILE__, __LINE__, M_LOG_INFO, tid, __VA_ARGS__)
+
+#define mondemand_debug(m, tid, ...) \
+  mondemand_log_real(m, __FILE__, __LINE__, M_LOG_DEBUG, tid, __VA_ARGS__)
+
+
+#elif HAVE_GNUC_VARARGS
+
+/* macros for gnuc style varargs */
+
+#define mondemand_log(m, level, tid, format...) \
+  mondemand_log_real(m, __FILE__, __LINE__, level, tid, format)
+
+#define mondemand_emerg(m, tid, format...) \
+  mondemand_log_real(m, __FILE__, __LINE__, M_LOG_EMERG, tid, format)
+
+#define mondemand_alert(m, tid, format...) \
+  mondemand_log_real(m, __FILE__, __LINE__, M_LOG_ALERT, tid, format)
+
+#define mondemand_crit(m, tid, format...) \
+  mondemand_log_real(m, __FILE__, __LINE__, M_LOG_CRIT, tid, format)
+
+#define mondemand_error(m, tid, format...) \
+  mondemand_log_real(m, __FILE__, __LINE__, M_LOG_ERR, tid, format)
+
+#define mondemand_warning(m, tid, format...) \
+  mondemand_log_real(m, __FILE__, __LINE__, M_LOG_WARNING, tid, format)
+
+#define mondemand_notice(m, tid, format...) \
+  mondemand_log_real(m, __FILE__, __LINE__, M_LOG_NOTICE, tid, format)
+
+#define mondemand_info(m, tid, format...) \
+  mondemand_log_real(m, __FILE__, __LINE__, M_LOG_INFO, tid, format)
+
+#define mondemand_debug(m, tid, format...) \
+  mondemand_log_real(m, __FILE__, __LINE__, M_LOG_DEBUG, tid, format)
+
+
+#endif
 
 /*=====================================================================*/
 /* Semi-private functions                                              */
@@ -193,6 +270,36 @@ int mondemand_log_real_va(struct mondemand_client *client,
                           const int level,
                           const struct mondemand_trace_id trace_id,
                           const char *format, va_list args);
+
+/*!\fn int mondemand_stats_inc(struct mondemand_client *client,
+ *                             const char *filename, const int line,
+ *                             const char *key, const int value)
+ * \brief lower-level stats function that increments a named key with
+ *        the given value
+ */
+int mondemand_stats_inc(struct mondemand_client *client,
+                        const char *filename, const int line,
+                        const char *key, const int value);
+
+/*!\fn int mondemand_stats_dec(struct mondemand_client *client,
+ *                             const char *filename, const int line,
+ *                             const char *key, const int value)
+ * \brief lower-level stats function that decrements a named key with
+ *        the given value
+ */
+int mondemand_stats_dec(struct mondemand_client *client,
+                        const char *filename, const int line,
+                        const char *key, const int value);
+
+/*!\fn int mondemand_stats_set(struct mondemand_client *client,
+ *                             const char *filename, const int line,
+ *                             const char *key, const int value)
+ * \brief lower-level stats function that sets a named key with
+ *        the given value
+ */
+int mondemand_stats_set(struct mondemand_client *client,
+                        const char *filename, const int line,
+                        const char *key, const int value);
 
 
 
