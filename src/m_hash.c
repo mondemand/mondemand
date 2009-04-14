@@ -9,6 +9,15 @@
    keys in an event, but then again 640k ought to be enough for anybody */
 #define DEFAULT_SIZE 100
 
+
+/* internal structure for iterating */
+struct m_hash_iterator
+{
+  int index;
+  struct m_hash_node *current;
+};
+
+
 /* forward declaration of private functions */
 int m_hash_function(const char *key);
 void m_hash_free(void *value);

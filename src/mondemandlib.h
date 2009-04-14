@@ -136,6 +136,16 @@ void
 mondemand_remove_all_contexts(struct mondemand_client *client);
 
 
+/*\fn mondemand_level_is_enabled(struct mondemand_client *client,
+ *                               const int log_level)
+ * \brief this checks if a log level is enabled, which is useful to callers
+ *        in case they want to check whether or not to bother to log.
+ */
+int
+mondemand_level_is_enabled(struct mondemand_client *client,
+                           const int log_level);
+
+
 /*!\fn mondemand_trace_id
  * \brief creates a trace ID from an unsigned long.
  */
@@ -237,8 +247,48 @@ int mondemand_flush(struct mondemand_client *client);
 #define mondemand_debug(m, tid, format...) \
   mondemand_log_real(m, __FILE__, __LINE__, M_LOG_DEBUG, tid, format)
 
-
 #endif
+
+/* increments a counter by 1 using the filename:line */
+#define mondemand_increment(m) \
+  mondemand_stats_inc(m, __FILE__, __LINE__, NULL, 1)
+
+/* increments a counter by value using the filename:line */
+#define mondemand_increment_value(m, v) \
+  mondemand_stats_inc(m, __FILE__, __LINE__, NULL, v)
+
+/* increments the specified key by 1 */
+#define mondemand_increment_key(m, k) \
+  mondemand_stats_inc(m, __FILE__, __LINE__, k, 1);
+
+/* increments the specified key by value */
+#define mondemand_increment_key_by_val(m, k, v) \
+  mondemand_stats_inc(m, __FILE__, __LINE__, k, v)
+
+/* decrements a counter by 1 using filename:line */
+#define mondemand_decrement(m) \
+  mondemand_stats_dec(m, __FILE__, __LINE__, NULL, 1)
+
+/* decrements a counter by value using filename:line */
+#define mondemand_decrement_value(m, v) \
+  mondemand_stats_dec(m, __FILE__, __LINE__, NULL, v)
+
+/* decrements the named key by 1 */
+#define mondemand_decrement_key(m, k) \
+  mondemand_stats_dec(m, __FILE__, __LINE__, k, 1);
+
+/* decrements the named key by value */
+#define mondemand_decrement_key_by_val(m, k, v) \
+  mondemand_stats_dec(m, __FILE__, __LINE__, k, v)
+
+/* sets a counter by value using filename:line */
+#define mondemand_set_by_val(m, v) \
+  mondemand_stats_set(m, __FILE__, __LINE__, NULL, v)
+
+/* set the specified key to the value specified */
+#define mondemand_set_key_by_val(m, k, v) \
+  mondemand_stats_set(m, __FILE__, __LINE__, k, v)
+
 
 /*=====================================================================*/
 /* Semi-private functions                                              */

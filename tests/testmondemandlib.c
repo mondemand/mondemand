@@ -202,6 +202,10 @@ main(void)
   /* lower the no send threshold */
   mondemand_set_no_send_level(client, M_LOG_DEBUG);
 
+  /* check the log levels */
+  assert( mondemand_level_is_enabled(client, M_LOG_INFO) > 0 );
+  mondemand_level_is_enabled(NULL, -5);
+
   /* log a lot of stuff, as if we were in an inner loop */
   for( i=0; i<1000; ++i )
   {
@@ -232,6 +236,12 @@ main(void)
   mondemand_stats_inc(client, __FILE__, __LINE__, "failwhale", 202);
   mondemand_stats_set(client, __FILE__, __LINE__, "windoesnot", 500);
   m_hash_fail = 0;
+
+  mondemand_flush_stats(client);
+
+  mondemand_flush_stats_no_reset(client);
+  mondemand_flush_stats_no_reset(NULL);
+  mondemand_flush(client);
 
   /* free it up */
   mondemand_client_destroy(client);

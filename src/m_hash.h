@@ -32,15 +32,6 @@ struct m_hash_table
   void **nodes;
 };
 
-/*! \struct m_hash_iterator
- *  \brief  Structure for iterating through the hash.
- */
-struct m_hash_iterator
-{
-  int index;
-  struct m_hash_node *current;
-};
-
 /*!\fn struct m_hash_table *m_hash_table_destroy(void)
  * \brief creates a hash table.
  */

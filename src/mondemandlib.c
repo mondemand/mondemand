@@ -223,6 +223,20 @@ mondemand_remove_all_contexts(struct mondemand_client *client)
   }
 }
 
+/* check if a level is enabled */
+int
+mondemand_level_is_enabled(struct mondemand_client *client,
+                           const int log_level)
+{
+  if( client != NULL )
+  {
+    return log_level < client->no_send_level;
+  } else {
+    return 0;
+  }
+}
+
+
 /* generate a trace id */
 struct mondemand_trace_id
 mondemand_trace_id(unsigned long id)
@@ -261,6 +275,57 @@ mondemand_flush_logs(struct mondemand_client *client)
   return 0;
 }
 
+/* flush the stats to the transports */
+int
+mondemand_flush_stats(struct mondemand_client *client)
+{
+  int i=0;
+  const char **keys = NULL;
+  MStatCounter *counter = NULL;
+
+  if( client != NULL )
+  {
+    /* reset all the stats */
+    keys = m_hash_table_keys(client->stats);
+    if( keys != NULL )
+    {
+      for( i=0; keys[i] != NULL; ++i )
+      {
+        counter = m_hash_table_get(client->stats, keys[i]);
+        if( counter != NULL )
+        {
+          *counter = 0;
+        } 
+      } 
+    } /* if( keys != NULL ) */
+  } /* if( client != NULL ) */
+
+  return 0;
+}
+
+/* flush the stats to the transports */
+int
+mondemand_flush_stats_no_reset(struct mondemand_client *client)
+{
+  if( client != NULL )
+  {
+    /* emit data */
+  }
+
+  return 0;
+}
+
+
+/* flush everything */
+int
+mondemand_flush(struct mondemand_client *client)
+{
+  int retval = 0;
+  retval += mondemand_flush_logs(client);
+  retval += mondemand_flush_stats(client);
+
+  return retval;
+}
 
 /*========================================================================*/
 /* Semi-private functions                                                 */
