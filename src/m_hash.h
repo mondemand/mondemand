@@ -46,7 +46,7 @@ struct m_hash_iterator
  */
 struct m_hash_table *m_hash_table_create(void);
 
-/*!\fn void m_hash_table_destroy(struct m_hash_table *hash_table)
+/*!\fn int m_hash_table_destroy(struct m_hash_table *hash_table)
  * \brief destroys a hash table.
  */
 void m_hash_table_destroy(struct m_hash_table *hash_table);
@@ -60,8 +60,9 @@ void *m_hash_table_get(struct m_hash_table *hash_table, const char *key);
 /*!\fn void m_hash_table_set(struct m_hash_table *hash_table,
  *                           char *key, void *value)
  * \brief sets a value in the hash table, creating or overwriting if necessary.
+ * \return 0 on success, non-zero on failure
  */
-void m_hash_table_set(struct m_hash_table *hash_table, char *key, void *value);
+int m_hash_table_set(struct m_hash_table *hash_table, char *key, void *value);
 
 /*!\fn void m_hash_table_remove(struct m_hash_table *hash_table, 
                                 const char *key)

@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "m_hash.h"
+
 /* wrap malloc to cause memory problems */
 static int malloc_fail = 0;
 
@@ -32,11 +34,27 @@ char *my_strdup(const char *s)
   return ret;
 }
 
+/* wrap m_hash_table_set to make it fail */
+static int m_hash_fail = 0;
+int
+my_m_hash_table_set(struct m_hash_table *hash_table, char *key, void *value)
+{
+  int ret = -3;
+  if( m_hash_fail == 0 )
+  {
+    ret = m_hash_table_set(hash_table, key, value);
+  } 
+  return ret;
+}
+
+
 #define m_try_malloc0 my_malloc
 #define strdup my_strdup
+#define m_hash_table_set my_m_hash_table_set
 #include "mondemandlib.c"
 #undef m_try_malloc0
 #undef strdup
+#undef m_hash_table_set
 
 
 int
@@ -46,6 +64,7 @@ main(void)
   const char *data = NULL;
   const char **list = NULL;
   struct mondemand_client *client = NULL;
+  struct mondemand_trace_id trace_id, trace_id2;
   char buf[512];
 
   /* test NULL parameter */
@@ -57,15 +76,15 @@ main(void)
   assert( client != NULL );
 
   /* set a valid send level then some bogus ones */
-  mondemand_client_set_immediate_send_level(client, M_LOG_ALERT);
-  mondemand_client_set_immediate_send_level(client, -1);
-  mondemand_client_set_immediate_send_level(client, 100000);
+  mondemand_set_immediate_send_level(client, M_LOG_ALERT);
+  mondemand_set_immediate_send_level(client, -1);
+  mondemand_set_immediate_send_level(client, 100000);
   assert( client->immediate_send_level == M_LOG_ALERT );
 
   /* set a valid send level then some bogus ones */
-  mondemand_client_set_no_send_level(client, M_LOG_NOTICE);
-  mondemand_client_set_no_send_level(client, -100);
-  mondemand_client_set_no_send_level(client, 56494949);
+  mondemand_set_no_send_level(client, M_LOG_NOTICE);
+  mondemand_set_no_send_level(client, -100);
+  mondemand_set_no_send_level(client, 56494949);
   assert( client->no_send_level == M_LOG_NOTICE );
 
   /* destroy it */
@@ -90,43 +109,48 @@ main(void)
   assert( client != NULL );
 
   /* set some contexts */
-  mondemand_client_set_context(client, "context-key-1", "context-value-1");
+  mondemand_set_context(client, "context-key-1", "context-value-1");
 
   /* try it with strdup errors */
   strdup_fail = 1;
-  mondemand_client_set_context(client, "abc", "123");
+  mondemand_set_context(client, "abc", "123");
   strdup_fail = 0;
 
   /* create a grip of contexts */
   for( i=0; i<1000; ++i )
   {
     sprintf(buf, "grip-%d", i);
-    mondemand_client_set_context(client, buf, "this is a grip of data");
+    mondemand_set_context(client, buf, "this is a grip of data");
   }
 
   /* fetch some of them */
-  data = mondemand_client_get_context(client, "grip-100");
+  data = mondemand_get_context(client, "grip-100");
   assert( strcmp(data, "this is a grip of data") == 0 );
 
   /* remove some of them */
-  mondemand_client_remove_context(client, "grip-101");
-  mondemand_client_remove_context(client, "grip-381");
+  mondemand_remove_context(client, "grip-101");
+  mondemand_remove_context(client, "grip-381");
 
   /* get some of the data that isn't there */
-  data = mondemand_client_get_context(client, "grip-101");
+  data = mondemand_get_context(client, "grip-101");
   assert( data == NULL );
 
   /* get a list of keys */
-  list = mondemand_client_get_context_keys(client); 
+  list = mondemand_get_context_keys(client); 
   free(list);
 
   /* overwrite some of it */
-  mondemand_client_set_context(client, "grip-200", "new value");
-  data = mondemand_client_get_context(client, "grip-200");
+  mondemand_set_context(client, "grip-200", "new value");
+  data = mondemand_get_context(client, "grip-200");
   assert( strcmp(data, "new value") == 0 ); 
 
+  /* set some contexts where the hash table fails */
+  m_hash_fail = 1; 
+  assert( mondemand_set_context(client, "bogus123", "silly345") != 0 );
+  m_hash_fail = 0;
+
   /* remove the rest */
-  mondemand_client_remove_all_contexts(client);
+  mondemand_remove_all_contexts(client);
   assert( client->contexts->num == 0 );
   
 
@@ -134,8 +158,49 @@ main(void)
   for( i=0; i<1000; ++i )
   {
     sprintf(buf, "test-%d", i);
-    mondemand_client_set_context(client, buf, "hi there");
+    mondemand_set_context(client, buf, "hi there");
   }
+
+  /* make sure we've got data */
+  list = mondemand_get_context_keys(client);
+  for( i=0; list[i] != NULL; ++i );
+  assert( i > 999 );
+  free(list);
+
+  /* create a trace ID */
+  trace_id = mondemand_trace_id(12345);  
+  trace_id2 = mondemand_trace_id(34567);
+
+  /* compare them */
+  assert( mondemand_trace_id_compare(&trace_id, &trace_id2) == -1 );
+  assert( mondemand_trace_id_compare(&trace_id2, &trace_id) == 1 );
+  assert( mondemand_trace_id_compare(&trace_id, &trace_id) == 0 );
+  assert( mondemand_trace_id_compare(&MONDEMAND_NULL_TRACE_ID,
+                                     &MONDEMAND_NULL_TRACE_ID) == 0 );
+
+  /* log some stuff */
+  mondemand_log_real(client, __FILE__, __LINE__, M_LOG_EMERG, trace_id,
+                     "this is a test");
+  mondemand_log_real(client, __FILE__, __LINE__, M_LOG_ERR,
+                     MONDEMAND_NULL_TRACE_ID, "another test");
+
+
+  /* lower the no send threshold */
+  mondemand_set_no_send_level(client, M_LOG_DEBUG);
+
+  /* log a lot of stuff, as if we were in an inner loop */
+  for( i=0; i<1000; ++i )
+  {
+    mondemand_log_real(client, __FILE__, __LINE__, M_LOG_INFO,
+                       MONDEMAND_NULL_TRACE_ID, "spamspamspam");
+  }
+
+  /* this should fail since we're unable to allocate the message */
+  malloc_fail = 1;
+  mondemand_log_real(client, __FILE__, __LINE__, M_LOG_INFO,
+                     MONDEMAND_NULL_TRACE_ID, "memoryerrors");
+  malloc_fail = -1;
+
 
   /* free it up */
   mondemand_client_destroy(client);

@@ -80,7 +80,7 @@ m_hash_table_get(struct m_hash_table *hash_table, const char *key)
 }
 
 /* sets a value, creating or overwriting if necessary */
-void
+int
 m_hash_table_set(struct m_hash_table *hash_table, char *key, void *value)
 {
   int index = 0;
@@ -100,7 +100,7 @@ m_hash_table_set(struct m_hash_table *hash_table, char *key, void *value)
       m_hash_free(tmp->value);
       tmp->key = key;
       tmp->value = value;
-      return;
+      return 0;
     }
 
     /* allocate the new node */
@@ -128,8 +128,13 @@ m_hash_table_set(struct m_hash_table *hash_table, char *key, void *value)
 
       /* increment the count */
       hash_table->num++;
+    } else {
+      /* malloc failed */
+      return -3;
     }
   }
+
+  return 0;
 }
 
 void

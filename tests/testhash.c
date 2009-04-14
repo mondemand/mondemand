@@ -105,6 +105,16 @@ main(void)
     m_hash_table_set(hash_table, key, value);
   }
 
+  /* set some values but have malloc fail */
+  key = strdup("test1");
+  value = strdup("stuff");
+  malloc_count = 0;
+  malloc_fail_at = 1;
+  m_hash_table_set(hash_table, key, value);
+  malloc_fail_at = -1;
+  free(key);
+  free(value);
+
   /* this should destroy all 1000 keys/values */ 
   m_hash_table_remove_all(hash_table);
 
