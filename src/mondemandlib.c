@@ -297,6 +297,8 @@ mondemand_flush_stats(struct mondemand_client *client)
           *counter = 0;
         } 
       } 
+
+      free(keys);
     } /* if( keys != NULL ) */
   } /* if( client != NULL ) */
 
