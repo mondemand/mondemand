@@ -76,6 +76,66 @@ AC_CHECK_LIB(nsl,main)
 AC_CHECK_LIB(xnet,main)
 AC_CHECK_LIB(resolv,main)
 
+dnl Figure out what kind of varargs this platform supports
+# check for flavours of varargs macros
+AC_MSG_CHECKING(for ISO C99 varargs macros in C)
+AC_TRY_COMPILE([],[
+int a(int p1, int p2, int p3);
+#define call_a(...) a(1,__VA_ARGS__)
+call_a(2,3);
+],g_have_iso_c_varargs=yes,g_have_iso_c_varargs=no)
+AC_MSG_RESULT($g_have_iso_c_varargs)
+if test "x$g_have_iso_c_varargs" = "xyes" ; then
+  AC_DEFINE([HAVE_ISO_C_VARARGS], [1], [ISO C99 varargs macros in C])
+fi
+
+AC_MSG_CHECKING(for ISO C99 varargs macros in C++)
+if test "$CXX" = ""; then
+dnl No C++ compiler
+g_have_iso_cxx_varargs=no
+else
+  AC_LANG_CPLUSPLUS
+  AC_TRY_COMPILE([],[
+int a(int p1, int p2, int p3);
+#define call_a(...) a(1,__VA_ARGS__) call_a(2,3);
+],g_have_iso_cxx_varargs=yes,g_have_iso_cxx_varargs=no)
+  AC_LANG_C
+fi
+AC_MSG_RESULT($g_have_iso_cxx_varargs)
+if test "x$g_have_iso_cxx_varargs" = "xyes" ; then
+  AC_DEFINE([HAVE_ISO_CXX_VARARGS], [1], [ISO C99 varargs macros in C++])
+fi
+
+AC_MSG_CHECKING(for GNUC varargs macros)
+AC_TRY_COMPILE([],[
+int a(int p1, int p2, int p3);
+#define call_a(params...) a(1,params)
+call_a(2,3);
+],g_have_gnuc_varargs=yes,g_have_gnuc_varargs=no)
+AC_MSG_RESULT($g_have_gnuc_varargs)
+if test "x$g_have_gnuc_varargs" = "xyes" ; then
+  AC_DEFINE([HAVE_GNUC_C_VARARGS], [1], [GNUC varargs macros in C])
+fi
+
+AC_MSG_CHECKING(for GNUC varargs macros in C++)
+if test "$CXX" = ""; then
+dnl No C++ compiler
+g_have_iso_cxx_varargs=no
+else
+  AC_LANG_CPLUSPLUS
+  AC_TRY_COMPILE([],[
+int a(int p1, int p2, int p3);
+#define call_a(params...) a(1,params)
+call_a(2,3);
+],g_have_gnuc_cxx_varargs=yes,g_have_gnuc_cxx_varargs=no)
+  AC_LANG_C
+fi
+AC_MSG_RESULT($g_have_gnuc_cxx_varargs)
+if test "x$g_have_gnuc_cxx_varargs" = "xyes" ; then
+  AC_DEFINE([HAVE_GNUC_CXX_VARARGS], [1], [GNUC varargs macros in C++])
+fi
+
+
 # --- Coverage hooks ---
 
 AC_ARG_ENABLE(coverage,

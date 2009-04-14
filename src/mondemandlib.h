@@ -140,6 +140,28 @@ int mondemand_trace_id_compare(const struct mondemand_trace_id *a,
  */
 int mondemand_flush_logs(struct mondemand_client *client);
 
+/*!\fn mondemand_flush_stats
+ * \brief flushes stats to the transports.
+ */
+int mondemand_flush_stats(struct mondemand_client *client);
+
+/*!\fn mondemand_flush_stats_no_reset
+ * \brief flushes stats to the transports, but does NOT reset the counters.
+ *        this is useful for monotonically increasing counters.
+ */
+int mondemand_flush_stats_no_reset(struct mondemand_client *client);
+
+/*!\fn mondemand_flush
+ * \brief flushes logs and stats.
+ */
+int mondemand_flush(struct mondemand_client *client);
+
+
+/*=====================================================================*/
+/* Useful Macros                                                       */
+/*=====================================================================*/
+
+
 
 /*=====================================================================*/
 /* Semi-private functions                                              */
