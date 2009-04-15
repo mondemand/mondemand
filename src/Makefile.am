@@ -18,7 +18,8 @@ mymaintainercleanfiles = config.h.in
 
 # list of public library header files
 
-myheaderfiles = mondemandlib.h
+myheaderfiles = \
+                mondemandlib.h
 
 # list of private library header files
 # these aren't installed or listed in the library common header

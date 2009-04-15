@@ -37,6 +37,12 @@
 #define M_LOG_WARN M_LOG_WARNING
 #define M_LOG_ERROR M_LOG_ERR
 
+/* stat counter type */
+#if HAVE_LONG_LONG
+typedef long long MStatCounter;
+#else
+typedef long MStatCounter;
+#endif
 
 /* forward declaration of opaque structs */
 struct mondemand_client;
@@ -350,7 +356,6 @@ int mondemand_stats_dec(struct mondemand_client *client,
 int mondemand_stats_set(struct mondemand_client *client,
                         const char *filename, const int line,
                         const char *key, const int value);
-
 
 
 #endif /* __MONDEMAND_H_ */

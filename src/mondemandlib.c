@@ -49,14 +49,6 @@ struct m_log_message
 };
 
 
-/* an internal structure for handilng counters */
-#if HAVE_LONG_LONG
-typedef long long MStatCounter;
-#else
-typedef long MStatCounter;
-#endif
-
-
 /* ======================================================================== */
 /* Public API functions                                                     */
 /* ======================================================================== */
