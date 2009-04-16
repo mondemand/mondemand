@@ -1,6 +1,7 @@
 
 #include "m_mem.h"
 #include "m_hash.h"
+#include "mondemand_trace.h"
 #include "mondemandlib.h"
 
 #include <stdio.h>
@@ -9,6 +10,13 @@
 
 #define M_MESSAGE_MAX 2048
 #define M_MAX_MESSAGES 10
+
+/* stat counter type */
+#if HAVE_LONG_LONG
+typedef long long MStatCounter;
+#else
+typedef long MStatCounter;
+#endif
 
 
 /* client structure */
@@ -27,14 +35,6 @@ struct mondemand_client
   /* hashtable of stats */
   struct m_hash_table *stats;
 };
-
-
-/* trace structure and constants */
-struct mondemand_trace_id
-{
-  unsigned long _id;
-};
-const struct mondemand_trace_id MONDEMAND_NULL_TRACE_ID = { 0 };
 
 
 /* define an internal structure for keeping log messages */
@@ -226,33 +226,6 @@ mondemand_level_is_enabled(struct mondemand_client *client,
   } else {
     return 0;
   }
-}
-
-
-/* generate a trace id */
-struct mondemand_trace_id
-mondemand_trace_id(unsigned long id)
-{
-  struct mondemand_trace_id trace_id;
-  trace_id._id = id;
-  return trace_id;
-}
-
-/* compare trace ids */
-int
-mondemand_trace_id_compare(const struct mondemand_trace_id *a,
-                           const struct mondemand_trace_id *b)
-{
-  if( a == NULL ) return -1;
-  if( b == NULL ) return 1;
-
-  if( a ->_id < b->_id ) {
-    return -1;
-  } else if(a ->_id > b->_id ) {
-    return 1;
-  }
-
-  return 0;
 }
 
 /* flush the logs to the transports */

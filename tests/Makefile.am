@@ -35,7 +35,8 @@ testhash_LDADD = ../src/m_mem.o
 
 testmondemandlib_SOURCES = testmondemandlib.c
 testmondemandlib_LDADD = ../src/m_mem.o \
-                         ../src/m_hash.o
+                         ../src/m_hash.o \
+                         ../src/mondemand_trace.o
 
 # END: Variables to change
 # past here, hopefully, there is no need to edit anything

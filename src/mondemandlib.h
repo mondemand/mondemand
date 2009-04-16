@@ -9,6 +9,8 @@
 
 #include "config.h"
 #include "m_hash.h"
+#include "mondemand_trace.h"
+#include "mondemand_transport.h"
 
 #include <stdarg.h>
 
@@ -37,17 +39,9 @@
 #define M_LOG_WARN M_LOG_WARNING
 #define M_LOG_ERROR M_LOG_ERR
 
-/* stat counter type */
-#if HAVE_LONG_LONG
-typedef long long MStatCounter;
-#else
-typedef long MStatCounter;
-#endif
 
 /* forward declaration of opaque structs */
 struct mondemand_client;
-struct mondemand_trace_id;
-extern const struct mondemand_trace_id MONDEMAND_NULL_TRACE_ID;
 
 
 /*!\fn mondemand_client_create(const char *program_identifier)
@@ -142,6 +136,23 @@ void
 mondemand_remove_all_contexts(struct mondemand_client *client);
 
 
+/*!\fn mondemand_add_transport(struct mondemand_client *client,
+ *                             struct mondemand_transport *transport)
+ * \brief adds a transport, which are configurable callbacks used to
+ *        send log and stat messages.
+ */
+int
+mondemand_add_transport(struct mondemand_client *client,
+                        struct mondemand_transport *transport);
+
+/*@\fn mondemand_initialize_transports(struct mondemand_client *client)
+ * \brief initializes all transports.  this calls the create function
+ *        for each transport.
+ */
+int
+mondemand_initialize_transports(struct mondemand_client *client);
+
+
 /*\fn mondemand_level_is_enabled(struct mondemand_client *client,
  *                               const int log_level)
  * \brief this checks if a log level is enabled, which is useful to callers
@@ -150,19 +161,6 @@ mondemand_remove_all_contexts(struct mondemand_client *client);
 int
 mondemand_level_is_enabled(struct mondemand_client *client,
                            const int log_level);
-
-
-/*!\fn mondemand_trace_id
- * \brief creates a trace ID from an unsigned long.
- */
-struct mondemand_trace_id mondemand_trace_id(unsigned long id);
-
-/*!\fn mondemand_trace_id_compare
- * \brief compares one trace_id to another.
- */
-int mondemand_trace_id_compare(const struct mondemand_trace_id *a,
-                               const struct mondemand_trace_id *b);
-
 
 /*!\fn mondemand_flush_logs
  * \brief flushes logs to the transports.
