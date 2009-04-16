@@ -51,6 +51,7 @@ struct mondemand_transport
   mondemand_transport_destroy_t destroy_function;
   mondemand_transport_log_sender_t log_sender_function;
   mondemand_transport_stat_sender_t stat_sender_function;
+  void *userdata;
 };
 
 #endif

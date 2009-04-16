@@ -79,6 +79,7 @@ main(void)
   const char **list = NULL;
   struct mondemand_client *client = NULL;
   struct mondemand_trace_id trace_id, trace_id2;
+  struct mondemand_transport *transport = NULL;
   char buf[512];
 
   /* test NULL parameter */
@@ -121,6 +122,23 @@ main(void)
   /* now create a valid one */
   client = mondemand_client_create("test1234");
   assert( client != NULL );
+
+  /* add some transports */
+  transport = (struct mondemand_transport *) 
+                malloc(sizeof(struct mondemand_transport));  
+
+  mondemand_add_transport(client, "transport1", transport); 
+
+  /* this should fail to write a 2nd copy */
+  mondemand_add_transport(client, "transport1", transport);
+
+  malloc_fail = 1;
+  mondemand_add_transport(client, "transport2", transport);
+  malloc_fail = 0;
+
+  m_hash_fail = 1;
+  mondemand_add_transport(client, "transport2", transport);
+  m_hash_fail = 0;
 
   /* set some contexts */
   mondemand_set_context(client, "context-key-1", "context-value-1");
@@ -242,6 +260,9 @@ main(void)
   mondemand_flush_stats_no_reset(client);
   mondemand_flush_stats_no_reset(NULL);
   mondemand_flush(client);
+
+  /* destroy the transport */
+  free(transport);
 
   /* free it up */
   mondemand_client_destroy(client);

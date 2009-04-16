@@ -2,6 +2,7 @@
 #include "m_mem.h"
 #include "m_hash.h"
 #include "mondemand_trace.h"
+#include "mondemand_transport.h"
 #include "mondemandlib.h"
 
 #include <stdio.h>
@@ -34,6 +35,8 @@ struct mondemand_client
   struct m_hash_table *messages;
   /* hashtable of stats */
   struct m_hash_table *stats;
+  /* hashtable of transports */
+  struct m_hash_table *transports; 
 };
 
 
@@ -75,10 +78,12 @@ mondemand_client_create(const char *program_identifier)
     client->contexts = m_hash_table_create();
     client->messages = m_hash_table_create();
     client->stats = m_hash_table_create();
+    client->transports = m_hash_table_create();
 
     /* if any of the memory allocation has failed, bail out */
     if( client->prog_id == NULL || client->contexts == NULL 
-        || client->messages == NULL )
+        || client->messages == NULL || client->stats == NULL
+        || client->transports == NULL )
     {
       mondemand_client_destroy(client);
       return NULL;
@@ -93,10 +98,13 @@ mondemand_client_destroy(struct mondemand_client *client)
 {
   if( client != NULL )
   {
+    mondemand_flush(client);
+
     m_free(client->prog_id);
     m_hash_table_destroy(client->contexts);
     m_hash_table_destroy(client->messages);
     m_hash_table_destroy(client->stats);
+    m_hash_table_destroy(client->transports);
     m_free(client);
   }
 }
@@ -215,6 +223,51 @@ mondemand_remove_all_contexts(struct mondemand_client *client)
   }
 }
 
+/* add a transport, by storing a reference to it */
+int
+mondemand_add_transport(struct mondemand_client *client, const char *name,
+                        struct mondemand_transport *transport)
+{
+  struct mondemand_transport **data = NULL;
+  char *key = NULL;
+
+  if( client != NULL && name != NULL && transport != NULL )
+  {
+    if( client->transports != NULL )
+    {
+      data = (struct mondemand_transport **) 
+               m_hash_table_get( client->transports, name );
+      if( data != NULL )
+      {
+        return -1; /* don't overwrite existing transports */
+      } else {
+        key = strdup(name);
+        data = (struct mondemand_transport **)
+                 m_try_malloc0(sizeof(struct mondemand_transport **));
+
+        if( key == NULL || data == NULL )
+        {
+          m_free(key);
+          m_free(data);
+          return -3; /* malloc failed */
+        }
+
+        /* store a reference to the transport */
+        *data = transport;
+
+        if( m_hash_table_set( client->transports, key, data ) != 0 )
+        {
+          m_free(key);
+          m_free(data);
+          return -3; /* hash table set failed */
+        }
+      }
+    } 
+  }
+
+  return 0;
+}
+
 /* check if a level is enabled */
 int
 mondemand_level_is_enabled(struct mondemand_client *client,
@@ -263,7 +316,7 @@ mondemand_flush_stats(struct mondemand_client *client)
         } 
       } 
 
-      free(keys);
+      m_free(keys);
     } /* if( keys != NULL ) */
   } /* if( client != NULL ) */
 
@@ -371,7 +424,7 @@ mondemand_log_real_va(struct mondemand_client *client,
             vsnprintf( message->message, M_MESSAGE_MAX, format, args );
             m_hash_table_set( client->messages, hash_key, message );
           } else {
-            free(hash_key);
+            m_free(hash_key);
             return -3;
           }
         } /* if( hash_key != NULL ) */
@@ -425,15 +478,15 @@ mondemand_stats_inc(struct mondemand_client *client, const char *filename,
       if( counter == NULL || new_key == NULL )
       {
         /* malloc failed */
-        free(new_key);
-        free(counter);
+        m_free(new_key);
+        m_free(counter);
         return -3;
       } else {
         *counter = value;
         if( m_hash_table_set( client->stats, new_key, counter ) != 0 )
         {
-          free(new_key);
-          free(counter);
+          m_free(new_key);
+          m_free(counter);
           return -3;
         }
       }
@@ -483,18 +536,18 @@ mondemand_stats_set(struct mondemand_client *client, const char *filename,
       if( counter == NULL || new_key == NULL )
       {
         /* malloc failed */
-        free(new_key);
-        free(counter);
+        m_free(new_key);
+        m_free(counter);
         return -3;
       } else {
         *counter = value;
         if( m_hash_table_set( client->stats, new_key, counter ) != 0 )
         {
-          free(new_key);
-          free(counter);
+          m_free(new_key);
+          m_free(counter);
           return -3;
         }
-      }
+      } 
     } else {
       /* we found the entry, simply increment */
       *counter = value;
