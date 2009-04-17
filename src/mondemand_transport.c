@@ -2,10 +2,49 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "m_mem.h"
 #include "mondemandlib.h"
 #include "mondemand_trace.h"
 #include "mondemand_transport.h"
 
+int mondemand_transport_stderr_log_sender(
+                      const struct mondemand_log_message messages[],
+                      const int message_count,
+                      const struct mondemand_context contexts[],
+                      const int context_count,
+                      void *userdata);
+
+int mondemand_transport_stderr_stats_sender(
+                      const struct mondemand_stats_message stats[],
+                      const int message_count,
+                      const struct mondemand_context contexts[],
+                      const int context_count,
+                      void *userdata);
+
+
+struct mondemand_transport *
+mondemand_transport_stderr_create(void)
+{
+  struct mondemand_transport *transport = NULL;
+
+  transport = (struct mondemand_transport *)  
+                m_try_malloc0(sizeof(struct mondemand_transport));
+
+  if( transport != NULL )
+  {
+    transport->log_sender_function = &mondemand_transport_stderr_log_sender;
+    transport->stats_sender_function = &mondemand_transport_stderr_stats_sender;
+    transport->userdata = NULL; /* not used */
+  }
+
+  return transport;
+}
+
+void
+mondemand_transport_stderr_destroy(struct mondemand_transport *transport)
+{
+  m_free(transport);
+}
 
 int
 mondemand_transport_stderr_log_sender(
@@ -56,6 +95,7 @@ mondemand_transport_stderr_log_sender(
     } /* if( messages[i].level ... ) */
   } /* for(i=0; i<message_count; ++i) */
 
+  /* we don't need userdata so just satisfy -Wall */
   (void) userdata;
 
   return 0;
@@ -81,12 +121,13 @@ mondemand_transport_stderr_stats_sender(
     {
       for( j=0; j<context_count; ++j )
       {  
-        fprintf( stderr, "%s = %s ", contexts[i].key, contexts[i].value );
+        fprintf( stderr, "%s = %s ", contexts[j].key, contexts[j].value );
       }
       fprintf( stderr, "\n" );
     }
   } /* for(i=0; i<message_count; ++i) */
 
+  /* we don't need userdata so just satisfy -Wall */
   (void) userdata;
 
   return 0;

@@ -9,6 +9,7 @@
 
 #include "m_hash.h"
 #include "m_mem.h"
+#include "mondemand_transport.h"
 
 /* wrap malloc to cause memory problems */
 static int malloc_fail = 0;
@@ -155,6 +156,7 @@ main(void)
   struct mondemand_client *client = NULL;
   struct mondemand_trace_id trace_id, trace_id2;
   struct mondemand_transport *transport = NULL;
+  struct mondemand_transport *stderr_transport = NULL;
   char buf[512];
 
   /* test NULL parameter */
@@ -332,6 +334,12 @@ main(void)
   mondemand_flush(client);
   fail_log_callback = 0;
 
+  /* setup the stderr transport */
+  mondemand_remove_all_contexts(client);
+  mondemand_set_context(client, "test1", "test1");
+  stderr_transport = mondemand_transport_stderr_create();
+  mondemand_add_transport(client, stderr_transport);
+
   mondemand_stats_set(client, __FILE__, __LINE__, "hlep", 4949494);
   fail_stats_callback = 1;
   mondemand_flush(client);
@@ -343,16 +351,17 @@ main(void)
   realloc_fail = 0;
 
   mondemand_flush_stats(client);
-
   mondemand_flush_stats_no_reset(client);
   mondemand_flush_stats_no_reset(NULL);
   mondemand_flush(client);
 
+
   /* free it up */
   mondemand_client_destroy(client);
 
-  /* clean up the transport */
+  /* clean up the transports */
   free(transport);
+  mondemand_transport_stderr_destroy(stderr_transport);
 
   return 0;
 }

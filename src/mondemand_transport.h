@@ -36,6 +36,10 @@ struct mondemand_stats_message
 
 /* define callback functions */
 
+struct mondemand_transport *mondemand_transport_stderr_create(void);
+void mondemand_transport_stderr_destroy(struct mondemand_transport *transport);
+
+
 /* method called when trying to log messages */
 typedef int (*mondemand_transport_log_sender_t)
               (const struct mondemand_log_message[],
