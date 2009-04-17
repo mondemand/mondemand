@@ -2,7 +2,7 @@
 
 # any additional includes to add to the compile lines
 
-myincludes =
+myincludes = $(LWES_CFLAGS)
 
 # any additional files to add to the distribution
 
@@ -49,7 +49,7 @@ lib_LTLIBRARIES =							\
   libmondemand.la
 
 libmondemand_la_SOURCES = ${mysourcefiles}
-libmondemand_la_LIBADD =
+libmondemand_la_LIBADD = $(LWES_LIBS)
 libmondemand_la_LDFLAGS = -version-info @MAJOR_VERSION@:@MINOR_VERSION@:0 @GCOV_LTFLAGS@
 
 bin_PROGRAMS =

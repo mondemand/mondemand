@@ -36,13 +36,25 @@ struct mondemand_stats_message
 
 /* define callback functions */
 
+/* stderr transport */
 struct mondemand_transport *mondemand_transport_stderr_create(void);
 void mondemand_transport_stderr_destroy(struct mondemand_transport *transport);
 
+/* lwes transport */
+struct mondemand_transport *mondemand_transport_lwes_create(
+                               const char *address, const int port,
+                               const char *interface, int emit_heartbeat,
+                               int heartbeat_frequency);
+struct mondemand_transport *mondemand_transport_lwes_create_with_ttl(
+                               const char *address, const int port,
+                               const char *interface, int emit_heartbeat,
+                               int heartbeat_frequency, int ttl);
+void mondemand_transport_lwes_destroy(struct mondemand_transport *transport);
 
 /* method called when trying to log messages */
 typedef int (*mondemand_transport_log_sender_t)
-              (const struct mondemand_log_message[],
+              (const char *program_identifier,
+               const struct mondemand_log_message[],
                const int message_count,
                const struct mondemand_context[],
                const int context_count,
@@ -50,7 +62,8 @@ typedef int (*mondemand_transport_log_sender_t)
 
 /* method called when trying to log statistics */
 typedef int (*mondemand_transport_stats_sender_t)
-              (const struct mondemand_stats_message[],
+              (const char *program_identifier,
+               const struct mondemand_stats_message[],
                const int message_count,
                const struct mondemand_context[],
                const int context_count,

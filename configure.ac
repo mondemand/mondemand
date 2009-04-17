@@ -55,6 +55,8 @@ AC_CHECK_HEADER(valgrind/valgrind.h,
 
 dnl check for LWES
 PKG_CHECK_MODULES([LWES], [lwes-0 >= 0.22.0])
+AC_SUBST(LWES_CFLAGS)
+AC_SUBST(LWES_LIBS)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST

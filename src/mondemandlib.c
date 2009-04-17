@@ -629,7 +629,8 @@ mondemand_dispatch_logs(struct mondemand_client *client)
         transport = client->transports[i];
         if( transport != NULL )
         {
-          if( transport->log_sender_function(messages, client->messages->num,
+          if( transport->log_sender_function(client->prog_id,
+                                             messages, client->messages->num,
                                              contexts, client->contexts->num,
                                              transport->userdata) != 0 )
           {
@@ -702,7 +703,7 @@ mondemand_dispatch_stats(struct mondemand_client *client)
         transport = client->transports[i];
         if( transport != NULL )
         {
-          if( transport->stats_sender_function(messages, 
+          if( transport->stats_sender_function(client->prog_id, messages, 
                                                client->stats->num,
                                                contexts,
                                                client->contexts->num,
