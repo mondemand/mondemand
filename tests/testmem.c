@@ -36,6 +36,7 @@ main(void)
 
   malloc_fail = 0;
   ptr = (void *) m_try_malloc0(1024);
+  ptr = m_try_realloc(ptr, 10255);
   m_free(ptr);
 
   return 0;

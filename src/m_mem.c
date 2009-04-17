@@ -29,6 +29,12 @@ m_try_malloc0(size_t size)
   return ptr;
 }
 
+void *m_try_realloc(void *ptr, size_t size)
+{
+  return realloc(ptr, size);
+}
+
+
 void
 m_free(void *ptr)
 {

@@ -35,8 +35,9 @@ struct mondemand_client
   struct m_hash_table *messages;
   /* hashtable of stats */
   struct m_hash_table *stats;
-  /* hashtable of transports */
-  struct m_hash_table *transports; 
+  /* array of transports */
+  int num_transports;
+  struct mondemand_transport **transports;
 };
 
 
@@ -50,6 +51,11 @@ struct m_log_message
   char message[M_MESSAGE_MAX+1];
   struct mondemand_trace_id trace_id;
 };
+
+
+/* private forward declarations */
+int mondemand_dispatch_logs(struct mondemand_client *client);
+int mondemand_dispatch_stats(struct mondemand_client *client);
 
 
 /* ======================================================================== */
@@ -78,12 +84,12 @@ mondemand_client_create(const char *program_identifier)
     client->contexts = m_hash_table_create();
     client->messages = m_hash_table_create();
     client->stats = m_hash_table_create();
-    client->transports = m_hash_table_create();
+    client->num_transports = 0;
+    client->transports = NULL;
 
     /* if any of the memory allocation has failed, bail out */
     if( client->prog_id == NULL || client->contexts == NULL 
-        || client->messages == NULL || client->stats == NULL
-        || client->transports == NULL )
+        || client->messages == NULL || client->stats == NULL )
     {
       mondemand_client_destroy(client);
       return NULL;
@@ -104,7 +110,8 @@ mondemand_client_destroy(struct mondemand_client *client)
     m_hash_table_destroy(client->contexts);
     m_hash_table_destroy(client->messages);
     m_hash_table_destroy(client->stats);
-    m_hash_table_destroy(client->transports);
+    m_free(client->transports);
+    client->num_transports = 0;
     m_free(client);
   }
 }
@@ -225,44 +232,26 @@ mondemand_remove_all_contexts(struct mondemand_client *client)
 
 /* add a transport, by storing a reference to it */
 int
-mondemand_add_transport(struct mondemand_client *client, const char *name,
+mondemand_add_transport(struct mondemand_client *client,
                         struct mondemand_transport *transport)
 {
   struct mondemand_transport **data = NULL;
-  char *key = NULL;
 
-  if( client != NULL && name != NULL && transport != NULL )
+  if( client != NULL && transport != NULL )
   {
-    if( client->transports != NULL )
+    data = (struct mondemand_transport **)
+             m_try_realloc(client->transports,
+                             (client->num_transports + 1) *
+                             sizeof(struct mondemand_transport *));
+
+    if( data == NULL )
     {
-      data = (struct mondemand_transport **) 
-               m_hash_table_get( client->transports, name );
-      if( data != NULL )
-      {
-        return -1; /* don't overwrite existing transports */
-      } else {
-        key = strdup(name);
-        data = (struct mondemand_transport **)
-                 m_try_malloc0(sizeof(struct mondemand_transport **));
+      return -3;
+    }
 
-        if( key == NULL || data == NULL )
-        {
-          m_free(key);
-          m_free(data);
-          return -3; /* malloc failed */
-        }
-
-        /* store a reference to the transport */
-        *data = transport;
-
-        if( m_hash_table_set( client->transports, key, data ) != 0 )
-        {
-          m_free(key);
-          m_free(data);
-          return -3; /* hash table set failed */
-        }
-      }
-    } 
+    data[client->num_transports] = transport;
+    client->num_transports++;
+    client->transports = data;
   }
 
   return 0;
@@ -285,8 +274,15 @@ mondemand_level_is_enabled(struct mondemand_client *client,
 int
 mondemand_flush_logs(struct mondemand_client *client)
 {
+  int retval = 0;
+
   if( client != NULL )
   {
+    if( (retval = mondemand_dispatch_logs(client)) != 0 )
+    {
+      return -1;
+    } 
+
     m_hash_table_remove_all( client->messages );
   }
 
@@ -298,11 +294,17 @@ int
 mondemand_flush_stats(struct mondemand_client *client)
 {
   int i=0;
+  int retval=0;
   const char **keys = NULL;
   MStatCounter *counter = NULL;
 
   if( client != NULL )
   {
+    if( (retval = mondemand_dispatch_stats(client)) != 0 )
+    {
+      return -1;
+    }
+
     /* reset all the stats */
     keys = m_hash_table_keys(client->stats);
     if( keys != NULL )
@@ -329,7 +331,10 @@ mondemand_flush_stats_no_reset(struct mondemand_client *client)
 {
   if( client != NULL )
   {
-    /* emit data */
+    if( mondemand_dispatch_stats(client) != 0 )
+    {
+      return -1;
+    }
   }
 
   return 0;
@@ -341,6 +346,7 @@ int
 mondemand_flush(struct mondemand_client *client)
 {
   int retval = 0;
+
   retval += mondemand_flush_logs(client);
   retval += mondemand_flush_stats(client);
 
@@ -561,4 +567,57 @@ mondemand_stats_set(struct mondemand_client *client, const char *filename,
 /*========================================================================*/
 /* Private functions                                                      */
 /*========================================================================*/
+
+/* dispatches log messages to the transports */
+int 
+mondemand_dispatch_logs(struct mondemand_client *client)
+{
+  int retval = 0;
+  int i = 0;
+  struct mondemand_transport *transport = NULL;
+
+  if( client != NULL )
+  {
+    /* TODO: create the structures needed to call the transport */
+
+    /* iterate through each transport */
+    for(i=0; i<client->num_transports; ++i)
+    {
+      transport = client->transports[i];
+      if( transport != NULL )
+      {
+        retval = transport->log_sender_function(NULL, NULL, NULL);
+      }
+    }
+  }
+
+  return retval;
+}
+
+/* dispatches stats to the transports */
+int
+mondemand_dispatch_stats(struct mondemand_client *client)
+{
+  int retval = 0;
+  int i=0;
+  struct mondemand_transport *transport = NULL;
+
+  if( client != NULL )
+  {
+    /* TODO: create the structures needed to call the transport */
+
+    /* iterate through each transport */
+    for(i=0; i<client->num_transports; ++i)
+    {
+      transport = client->transports[i];
+      if( transport != NULL )
+      {
+        retval = transport->stats_sender_function(NULL, NULL, NULL);
+      }
+    }
+
+  }
+
+  return retval;
+}
 

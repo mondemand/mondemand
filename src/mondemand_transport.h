@@ -33,24 +33,20 @@ struct mondemand_stats_message
 
 /* define callback functions */
 
-typedef int (*mondemand_transport_create_t)(void);
-
-typedef int (*mondemand_transport_destroy_t)(void);
-
 typedef int (*mondemand_transport_log_sender_t)
-              (const struct mondemand_context **contexts,
-               const struct mondemand_log_message **messages);
+              (const struct mondemand_log_message[],
+               const struct mondemand_context[],
+               void *);
 
-typedef int (*mondemand_transport_stat_sender_t)
-              (const struct mondemand_context **contexts,
-               const struct mondemand_stats_message **stats);
+typedef int (*mondemand_transport_stats_sender_t)
+              (const struct mondemand_stats_message[],
+               const struct mondemand_context[],
+               void *);
 
 struct mondemand_transport
 {
-  mondemand_transport_create_t create_function;
-  mondemand_transport_destroy_t destroy_function;
   mondemand_transport_log_sender_t log_sender_function;
-  mondemand_transport_stat_sender_t stat_sender_function;
+  mondemand_transport_stats_sender_t stats_sender_function;
   void *userdata;
 };
 

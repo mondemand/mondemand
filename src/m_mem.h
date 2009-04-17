@@ -25,6 +25,11 @@ void *m_try_malloc(size_t size);
  */
 void *m_try_malloc0(size_t size);
 
+/*! \fn m_try_realloc(void *ptr, size_t size)
+ *  \brief reallocate memory, the new memory is uninitialized.
+ */
+void *m_try_realloc(void *ptr, size_t size);
+
 /*! \fn m_free(void *ptr)
  *  \brief Free the memory referenced by ptr.  If ptr is NULL, no operation
  *         is performed.

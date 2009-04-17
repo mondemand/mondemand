@@ -137,14 +137,12 @@ mondemand_remove_all_contexts(struct mondemand_client *client);
 
 
 /*!\fn mondemand_add_transport(struct mondemand_client *client,
- *                             const char *name,
  *                             struct mondemand_transport *transport)
  * \brief adds a transport, which are configurable callbacks used to
  *        send log and stat messages.
  */
 int
 mondemand_add_transport(struct mondemand_client *client,
-                        const char *name,
                         struct mondemand_transport *transport);
 
 /*@\fn mondemand_initialize_transports(struct mondemand_client *client)

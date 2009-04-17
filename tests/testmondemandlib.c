@@ -12,6 +12,7 @@
 
 /* wrap malloc to cause memory problems */
 static int malloc_fail = 0;
+static int realloc_fail = 0;
 
 void *my_malloc0(size_t size)
 {
@@ -29,6 +30,16 @@ void *my_malloc(size_t size)
   if( malloc_fail == 0 )
   {
     ret = m_try_malloc(size);
+  }
+  return ret;
+}
+
+void *my_realloc(void *ptr, size_t size)
+{
+  void *ret = NULL;
+  if( realloc_fail == 0 )
+  {
+    ret = m_try_realloc(ptr, size);
   }
   return ret;
 }
@@ -62,14 +73,54 @@ my_m_hash_table_set(struct m_hash_table *hash_table, char *key, void *value)
 
 #define m_try_malloc0 my_malloc0
 #define m_try_malloc my_malloc
+#define m_try_realloc my_realloc
 #define strdup my_strdup
 #define m_hash_table_set my_m_hash_table_set
 #include "mondemandlib.c"
 #undef m_try_malloc0
 #undef m_try_malloc
+#undef m_try_realloc
 #undef strdup
 #undef m_hash_table_set
 
+/* define some basic callback functions */
+
+static int fail_log_callback = 0;
+static int fail_stats_callback = 0;
+
+int
+log_sender_callback(const struct mondemand_log_message messages[],
+                    const struct mondemand_context contexts[],
+                    void *userdata)
+{
+  (void) messages;
+  (void) contexts;
+  (void) userdata;
+
+  if( fail_log_callback != 0 )
+  {
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+stats_sender_callback(const struct mondemand_stats_message stats[],
+                      const struct mondemand_context contexts[],
+                      void *userdata)
+{
+  (void) userdata;
+  (void) stats;
+  (void) contexts;
+
+  if(fail_stats_callback != 0)
+  {
+    return -1;
+  }
+
+  return 0;
+}                     
 
 int
 main(void)
@@ -127,18 +178,15 @@ main(void)
   transport = (struct mondemand_transport *) 
                 malloc(sizeof(struct mondemand_transport));  
 
-  mondemand_add_transport(client, "transport1", transport); 
+  transport->log_sender_function = &log_sender_callback;
+  transport->stats_sender_function = &stats_sender_callback;
+  transport->userdata = NULL;
 
-  /* this should fail to write a 2nd copy */
-  mondemand_add_transport(client, "transport1", transport);
+  mondemand_add_transport(client, transport); 
 
-  malloc_fail = 1;
-  mondemand_add_transport(client, "transport2", transport);
-  malloc_fail = 0;
-
-  m_hash_fail = 1;
-  mondemand_add_transport(client, "transport2", transport);
-  m_hash_fail = 0;
+  realloc_fail = 1;
+  mondemand_add_transport(client, transport);
+  realloc_fail = 0;
 
   /* set some contexts */
   mondemand_set_context(client, "context-key-1", "context-value-1");
@@ -255,18 +303,34 @@ main(void)
   mondemand_stats_set(client, __FILE__, __LINE__, "windoesnot", 500);
   m_hash_fail = 0;
 
+  /* fail */
+  fail_log_callback = 1;
+  mondemand_flush(client);
+  fail_log_callback = 0;
+
+  mondemand_stats_set(client, __FILE__, __LINE__, "hlep", 4949494);
+  fail_stats_callback = 1;
+  mondemand_flush(client);
+  mondemand_flush_stats_no_reset(client);
+  fail_stats_callback = 0;
+
+  realloc_fail = 1;
+  mondemand_flush(client);
+  realloc_fail = 0;
+
   mondemand_flush_stats(client);
 
   mondemand_flush_stats_no_reset(client);
   mondemand_flush_stats_no_reset(NULL);
   mondemand_flush(client);
 
-  /* destroy the transport */
-  free(transport);
-
   /* free it up */
   mondemand_client_destroy(client);
 
+  /* clean up the transport */
+  free(transport);
+
   return 0;
 }
+
 
