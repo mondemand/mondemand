@@ -1,4 +1,6 @@
 
+#include "config.h"
+
 #include "m_mem.h"
 #include "m_hash.h"
 #include "mondemand_trace.h"
@@ -12,7 +14,7 @@
 #define M_MESSAGE_MAX 2048
 #define M_MAX_MESSAGES 10
 
-/* stat counter type */
+/* stat counter type - must match mondemand_transport.h */
 #if HAVE_LONG_LONG
 typedef long long MStatCounter;
 #else
@@ -575,21 +577,74 @@ mondemand_dispatch_logs(struct mondemand_client *client)
   int retval = 0;
   int i = 0;
   struct mondemand_transport *transport = NULL;
+  const char **message_keys = NULL;
+  const char **context_keys = NULL;
+  struct m_log_message *message = NULL;
+  struct mondemand_log_message *messages = NULL;
+  struct mondemand_context *contexts = NULL;
 
   if( client != NULL )
   {
-    /* TODO: create the structures needed to call the transport */
-
-    /* iterate through each transport */
-    for(i=0; i<client->num_transports; ++i)
+    if( client->messages != NULL && client->contexts != NULL )
     {
-      transport = client->transports[i];
-      if( transport != NULL )
+      /* fetch all the messages */
+      message_keys = m_hash_table_keys( client->messages );
+
+      /* allocate an array of structs */
+      messages = (struct mondemand_log_message *)
+                   m_try_malloc0(sizeof(struct mondemand_log_message) *
+                                 client->messages->num);
+      for(i=0; i<client->messages->num; ++i)
       {
-        retval = transport->log_sender_function(NULL, NULL, NULL);
-      }
-    }
-  }
+        /* we copy the values from the hash table since we want an 
+           immutable const structure to pass to the transport */
+        message = (struct m_log_message *) m_hash_table_get(client->messages,
+                                                            message_keys[i]); 
+        messages[i].filename = message->filename;
+        messages[i].line = message->line;
+        messages[i].level = message->level;
+        messages[i].repeat_count = message->repeat_count;
+        messages[i].message = message->message;
+        messages[i].trace_id = message->trace_id;
+      } 
+
+      /* fetch the keys to all the contexts */
+      context_keys = m_hash_table_keys( client->contexts );
+     
+      contexts = (struct mondemand_context *)
+                   m_try_malloc0(sizeof(struct mondemand_context) *
+                                 client->contexts->num);
+      for(i=0; i<client->contexts->num; ++i)
+      {
+        /* copy the pointer to a const struct that the transport
+           can copy from */
+        contexts[i].key = context_keys[i];
+        contexts[i].value = (char *) m_hash_table_get(client->contexts,
+                                                      context_keys[i]);
+      } 
+
+      /* iterate through each transport */
+      for(i=0; i<client->num_transports; ++i)
+      {
+        transport = client->transports[i];
+        if( transport != NULL )
+        {
+          if( transport->log_sender_function(messages, client->messages->num,
+                                             contexts, client->contexts->num,
+                                             transport->userdata) != 0 )
+          {
+            retval = -1;
+          }
+        }
+      } /* for(i=0; i<client->num_transports; ++i) */
+
+      /* clean up memory */
+      m_free(messages);
+      m_free(message_keys);
+      m_free(contexts);
+      m_free(context_keys);
+    } /* if( client->messages != NULL && client->contexts != NULL ) */
+  } /* if( client != NULL ) */
 
   return retval;
 }
@@ -601,22 +656,69 @@ mondemand_dispatch_stats(struct mondemand_client *client)
   int retval = 0;
   int i=0;
   struct mondemand_transport *transport = NULL;
+  const char **message_keys = NULL;
+  const char **context_keys = NULL;
+  struct mondemand_stats_message *messages = NULL;
+  struct mondemand_context *contexts = NULL;
 
   if( client != NULL )
   {
-    /* TODO: create the structures needed to call the transport */
-
-    /* iterate through each transport */
-    for(i=0; i<client->num_transports; ++i)
+    if( client->stats != NULL && client->contexts != NULL )
     {
-      transport = client->transports[i];
-      if( transport != NULL )
-      {
-        retval = transport->stats_sender_function(NULL, NULL, NULL);
-      }
-    }
+      /* fetch the stats */
+      message_keys = m_hash_table_keys( client->stats );
 
-  }
+      /* allocate an array of structs */
+      messages = (struct mondemand_stats_message *)
+                   m_try_malloc0(sizeof(struct mondemand_stats_message) *
+                                 client->stats->num);
+
+      for(i=0; i<client->stats->num; ++i)
+      {
+        messages[i].key = message_keys[i];
+        messages[i].counter = *((MStatCounter *) 
+                                  m_hash_table_get(client->stats,
+                                                   message_keys[i]));
+      }
+
+      /* fetch the keys to all the contexts */
+      context_keys = m_hash_table_keys( client->contexts );
+     
+      contexts = (struct mondemand_context *)
+                   m_try_malloc0(sizeof(struct mondemand_context) *
+                                 client->contexts->num);
+      for(i=0; i<client->contexts->num; ++i)
+      {
+        /* copy the pointer to a const struct that the transport
+           can copy from */
+        contexts[i].key = context_keys[i];
+        contexts[i].value = (char *) m_hash_table_get(client->contexts,
+                                                      context_keys[i]);
+      } 
+
+      /* iterate through each transport */
+      for(i=0; i<client->num_transports; ++i)
+      {
+        transport = client->transports[i];
+        if( transport != NULL )
+        {
+          if( transport->stats_sender_function(messages, 
+                                               client->stats->num,
+                                               contexts,
+                                               client->contexts->num,
+                                               transport->userdata) != 0 )
+          {
+            retval = -1;
+          }
+        }
+      } 
+
+      m_free(contexts);
+      m_free(context_keys);
+      m_free(messages);
+      m_free(message_keys);
+    } /* if( client->stats != NULL && client->contexts != NULL ) */
+  } /* if( client != NULL ) */
 
   return retval;
 }

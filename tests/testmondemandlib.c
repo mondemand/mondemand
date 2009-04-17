@@ -90,11 +90,23 @@ static int fail_stats_callback = 0;
 
 int
 log_sender_callback(const struct mondemand_log_message messages[],
+                    const int message_count,
                     const struct mondemand_context contexts[],
+                    const int context_count,
                     void *userdata)
 {
-  (void) messages;
-  (void) contexts;
+  int i=0;
+
+  for(i=0; i<message_count; ++i)
+  {
+    (void) messages[i];
+  }
+
+  for(i=0; i<context_count; ++i)
+  {
+    (void) contexts[i];
+  }
+
   (void) userdata;
 
   if( fail_log_callback != 0 )
@@ -107,12 +119,24 @@ log_sender_callback(const struct mondemand_log_message messages[],
 
 int
 stats_sender_callback(const struct mondemand_stats_message stats[],
+                      const int message_count,
                       const struct mondemand_context contexts[],
+                      const int context_count,
                       void *userdata)
 {
+  int i=0;
+
+  for(i=0; i<message_count; ++i)
+  {
+    (void) stats[i];
+  }
+ 
+  for(i=0; i<context_count; ++i)
+  {
+    (void) contexts[i];
+  }
+
   (void) userdata;
-  (void) stats;
-  (void) contexts;
 
   if(fail_stats_callback != 0)
   {
