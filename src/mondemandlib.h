@@ -38,6 +38,19 @@
 #define M_LOG_WARN M_LOG_WARNING
 #define M_LOG_ERROR M_LOG_ERR
 
+/* these are used to print human readable log levels */
+static const char * const MonDemandLogLevelStrings[] = {
+  "emerg",
+  "alert",
+  "crit",
+  "error",
+  "warning",
+  "notice",
+  "info",
+  "debug",
+  "all"
+};
+
 
 /* forward declaration of opaque structs */
 struct mondemand_client;

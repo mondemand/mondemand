@@ -37,6 +37,7 @@ mysourcefiles = \
                 m_mem.c \
                 m_hash.c \
                 mondemand_trace.c \
+                mondemand_transport.c \
                 mondemandlib.c
 
 # sigh ... automake/autoconf/libtool is not smart enough to handle AC_SUBST
