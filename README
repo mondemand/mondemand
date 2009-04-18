@@ -64,11 +64,33 @@ MonDemand::StatsMsg
 
 MonDemand::WorkflowMsg
 {
-  string prog_id;    # program_identifier
+  string prog_id;       # program_identifier
 
-  uint16 ctxt_num;   # number of contextual key/value dimensions
+  string resource_id;   # the resource that was affected, e.g. Job ID
+  string user_id;       # optional: user that initiated the change
+  string system_id;     # the system that triggered the change
 
-  string ctxt_k0;    # name of contextual metadata
-  string ctxt_v0;    # value of contextual metadata
+  int64 timestamp;      # when this change occurred
+
+  ip_addr client_ip;    # IP address of the client initiating the change
+  ip_addr server_ip;    # IP address of the server servicing the request
+  string location;      # URL or other locator information about the request
+
+  string action;        # the action that was taken on the resource
+  string description;   # a description of the action
+  int32 status;         # the result of the action taken
+
+  uint16 attribute_num; # the number of attributes
+  string attr_n0;       # the name of the attribute
+  string attr_t0;       # the type of the attribute
+  string attr_b0;       # the state before the change
+  string attr_a0;       # the state after the change
+  # repeated for the number of attributes in attribute_num
+
+  uint16 ctxt_num;      # number of contextual key/value dimensions
+
+  string ctxt_k0;       # name of contextual metadata
+  string ctxt_v0;       # value of contextual metadata
   # repeated for the number of contextual key/value pairs
 }
+
