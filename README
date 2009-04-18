@@ -22,7 +22,7 @@ This should be done at program initialization.
 Appendix: Event Format
 ----------------------
 
-If using the Light Weight Event System, here are the ESF entries for the two
+If using the Light Weight Event System, here are the ESF entries for the three
 types of messages sent by MonDemand.
 
 MonDemand::LogMessage
@@ -62,3 +62,13 @@ MonDemand::StatsMsg
   # repeated for the number of contextual key/value pairs
 }
 
+MonDemand::WorkflowMsg
+{
+  string prog_id;    # program_identifier
+
+  uint16 ctxt_num;   # number of contextual key/value dimensions
+
+  string ctxt_k0;    # name of contextual metadata
+  string ctxt_v0;    # value of contextual metadata
+  # repeated for the number of contextual key/value pairs
+}
