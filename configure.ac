@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([mondemand], [0.0.1], [mondemand-devel@lists.sourceforge.net])
+AC_INIT([mondemand], [0.0.2], [mondemand-devel@lists.sourceforge.net])
 AM_INIT_AUTOMAKE
 
 dnl Determine the host type for the host specific inclusion below
