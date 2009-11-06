@@ -150,7 +150,13 @@ stats_sender_callback(const char *prog_id,
   }
 
   return 0;
-}                     
+}
+
+void
+destroy_callback (struct mondemand_transport *transport)
+{
+  free(transport);
+}
 
 int
 main(void)
@@ -211,6 +217,7 @@ main(void)
 
   transport->log_sender_function = &log_sender_callback;
   transport->stats_sender_function = &stats_sender_callback;
+  transport->destroy_function = &destroy_callback;
   transport->userdata = NULL;
 
   mondemand_add_transport(client, transport); 
@@ -343,6 +350,8 @@ main(void)
   mondemand_remove_all_contexts(client);
   mondemand_set_context(client, "test1", "test1");
   stderr_transport = mondemand_transport_stderr_create();
+  /* adding the transport means the client will destroy it when its time
+     comes */
   mondemand_add_transport(client, stderr_transport);
 
   mondemand_stats_set(client, __FILE__, __LINE__, "hlep", 4949494);
@@ -360,13 +369,8 @@ main(void)
   mondemand_flush_stats_no_reset(NULL);
   mondemand_flush(client);
 
-
-  /* free it up */
+  /* free up the client and transports */
   mondemand_client_destroy(client);
-
-  /* clean up the transports */
-  free(transport);
-  mondemand_transport_stderr_destroy(stderr_transport);
 
   return 0;
 }
