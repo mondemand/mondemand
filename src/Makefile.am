@@ -52,9 +52,15 @@ libmondemand_la_SOURCES = ${mysourcefiles}
 libmondemand_la_LIBADD = $(LWES_LIBS)
 libmondemand_la_LDFLAGS = -version-info @MAJOR_VERSION@:@MINOR_VERSION@:0 @GCOV_LTFLAGS@
 
-bin_PROGRAMS =
+bin_PROGRAMS = \
+  mondemand-tool
 
-bin_SCRIPTS = 
+bin_SCRIPTS =
+
+mondemand_tool_SOURCES = \
+  mondemand-tool.c
+mondemand_tool_LDADD = \
+  lib@PACKAGE@.la
 
 # END: Variables to change
 # past here, hopefully, there is no need to edit anything

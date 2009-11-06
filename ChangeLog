@@ -1,3 +1,11 @@
+Version 0.1.0 (molinaro)
+  * added a tool for sending log messages and stats via the command line
+  * fixed header so that #defines will work now
+  * mondemand_client will automatically call destroy on all transports
+
+Version 0.0.2 (mlum)
+  * fixed some configuration issues
+
 Version 0.0.1 (mlum)
- * Initial import of open source package
+  * Initial import of open source package
 

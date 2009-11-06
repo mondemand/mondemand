@@ -69,11 +69,15 @@ typedef int (*mondemand_transport_stats_sender_t)
                const int context_count,
                void *);
 
+typedef void (*mondemand_transport_destroy_t)
+               (struct mondemand_transport *transport);
+
 /* a transport struct to encapsulate the data */
 struct mondemand_transport
 {
-  mondemand_transport_log_sender_t log_sender_function;
+  mondemand_transport_log_sender_t   log_sender_function;
   mondemand_transport_stats_sender_t stats_sender_function;
+  mondemand_transport_destroy_t      destroy_function;
   void *userdata;
 };
 

@@ -102,11 +102,24 @@ mondemand_client_create(const char *program_identifier)
 }
 
 void
-mondemand_client_destroy(struct mondemand_client *client)
+mondemand_client_destroy (struct mondemand_client *client)
 {
-  if( client != NULL )
+  int i=0;
+  struct mondemand_transport *transport = NULL;
+
+  if (client != NULL)
   {
-    mondemand_flush(client);
+    mondemand_flush (client);
+
+    /* destroy all the transports */
+    for(i=0; i < client->num_transports; ++i)
+      {
+        transport = client->transports[i];
+        if( transport != NULL )
+          {
+            transport->destroy_function (transport);
+          }
+      }
 
     m_free(client->prog_id);
     m_hash_table_destroy(client->contexts);
@@ -283,7 +296,7 @@ mondemand_flush_logs(struct mondemand_client *client)
     if( (retval = mondemand_dispatch_logs(client)) != 0 )
     {
       return -1;
-    } 
+    }
 
     m_hash_table_remove_all( client->messages );
   }
@@ -355,6 +368,29 @@ mondemand_flush(struct mondemand_client *client)
   return retval;
 }
 
+int mondemand_log_level_from_string (const char *level)
+{
+  unsigned int i;
+
+  if (level == NULL)
+    {
+      return -1;
+    }
+
+  for (i = 0 ;
+       i < (sizeof (MonDemandLogLevelStrings)
+            / sizeof ((MonDemandLogLevelStrings)[0]));
+       ++i)
+    {
+      if (strcmp (level, MonDemandLogLevelStrings[i]) == 0)
+        {
+          return i;
+        }
+    }
+
+  return -1;
+}
+
 /*========================================================================*/
 /* Semi-private functions                                                 */
 /*========================================================================*/
@@ -368,7 +404,7 @@ mondemand_log_real(struct mondemand_client *client,
   int retval = 0;
   va_list args;
   va_start(args, format);
-  retval = mondemand_log_real_va(client, filename, line, level, 
+  retval = mondemand_log_real_va(client, filename, line, level,
                                  trace_id, format, args);
   va_end(args);
   return retval;
@@ -606,11 +642,11 @@ mondemand_dispatch_logs(struct mondemand_client *client)
         messages[i].repeat_count = message->repeat_count;
         messages[i].message = message->message;
         messages[i].trace_id = message->trace_id;
-      } 
+      }
 
       /* fetch the keys to all the contexts */
       context_keys = m_hash_table_keys( client->contexts );
-     
+
       contexts = (struct mondemand_context *)
                    m_try_malloc0(sizeof(struct mondemand_context) *
                                  client->contexts->num);
@@ -621,7 +657,7 @@ mondemand_dispatch_logs(struct mondemand_client *client)
         contexts[i].key = context_keys[i];
         contexts[i].value = (char *) m_hash_table_get(client->contexts,
                                                       context_keys[i]);
-      } 
+      }
 
       /* iterate through each transport */
       for(i=0; i<client->num_transports; ++i)

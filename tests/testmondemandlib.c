@@ -75,6 +75,7 @@ my_m_hash_table_set(struct m_hash_table *hash_table, char *key, void *value)
 #define m_try_malloc0 my_malloc0
 #define m_try_malloc my_malloc
 #define m_try_realloc my_realloc
+#undef strdup
 #define strdup my_strdup
 #define m_hash_table_set my_m_hash_table_set
 #include "mondemandlib.c"

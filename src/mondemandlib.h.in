@@ -14,11 +14,11 @@
 #include <stdarg.h>
 
 #ifdef __cplusplus
-#define HAVE_ISO_VARARGS HAVE_ISO_CXX_VARARGS
-#define HAVE_GNUC_VARARGS HAVE_GNUC_CXX_VARARGS
+@HAVE_ISO_CXX_VARARGS@
+@HAVE_GNUC_CXX_VARARGS@
 #else
-#define HAVE_ISO_VARARGS HAVE_ISO_C_VARARGS
-#define HAVE_GNUC_VARARGS HAVE_GNUC_C_VARARGS
+@HAVE_ISO_C_VARARGS@
+@HAVE_GNUC_C_VARARGS@
 #endif
 
 /*
@@ -189,12 +189,16 @@ int mondemand_flush_stats_no_reset(struct mondemand_client *client);
  */
 int mondemand_flush(struct mondemand_client *client);
 
+/*!\fn mondemand_log_level_from_string
+ * \brief given a string return a log level
+ */
+int mondemand_log_level_from_string (const char *level);
 
 /*=====================================================================*/
 /* Useful Macros                                                       */
 /*=====================================================================*/
 
-#if HAVE_ISO_VARARGS
+#ifdef HAVE_ISO_VARARGS
 
 /* macros for ISO style varargs */
 
@@ -226,7 +230,7 @@ int mondemand_flush(struct mondemand_client *client);
   mondemand_log_real(m, __FILE__, __LINE__, M_LOG_DEBUG, tid, __VA_ARGS__)
 
 
-#elif HAVE_GNUC_VARARGS
+#elif defined(HAVE_GNUC_VARARGS)
 
 /* macros for gnuc style varargs */
 

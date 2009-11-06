@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([mondemand], [0.0.2], [mondemand-devel@lists.sourceforge.net])
+AC_INIT([mondemand], [0.1.0], [mondemand-devel@lists.sourceforge.net])
 AM_INIT_AUTOMAKE
 
 dnl Determine the host type for the host specific inclusion below
@@ -89,7 +89,10 @@ call_a(2,3);
 ],g_have_iso_c_varargs=yes,g_have_iso_c_varargs=no)
 AC_MSG_RESULT($g_have_iso_c_varargs)
 if test "x$g_have_iso_c_varargs" = "xyes" ; then
-  AC_DEFINE([HAVE_ISO_C_VARARGS], [1], [ISO C99 varargs macros in C])
+  dnl instead of adding these to the config.h, we want to substitute them
+  dnl directly in the header we ship out with the library
+  HAVE_ISO_C_VARARGS="#define HAVE_ISO_VARARGS"
+  AC_SUBST(HAVE_ISO_C_VARARGS)
 fi
 
 AC_MSG_CHECKING(for ISO C99 varargs macros in C++)
@@ -106,7 +109,10 @@ int a(int p1, int p2, int p3);
 fi
 AC_MSG_RESULT($g_have_iso_cxx_varargs)
 if test "x$g_have_iso_cxx_varargs" = "xyes" ; then
-  AC_DEFINE([HAVE_ISO_CXX_VARARGS], [1], [ISO C99 varargs macros in C++])
+  dnl instead of adding these to the config.h, we want to substitute them
+  dnl directly in the header we ship out with the library
+  HAVE_ISO_CXX_VARARGS="#define HAVE_ISO_VARARGS"
+  AC_SUBST(HAVE_ISO_CXX_VARARGS)
 fi
 
 AC_MSG_CHECKING(for GNUC varargs macros)
@@ -117,7 +123,10 @@ call_a(2,3);
 ],g_have_gnuc_varargs=yes,g_have_gnuc_varargs=no)
 AC_MSG_RESULT($g_have_gnuc_varargs)
 if test "x$g_have_gnuc_varargs" = "xyes" ; then
-  AC_DEFINE([HAVE_GNUC_C_VARARGS], [1], [GNUC varargs macros in C])
+  dnl instead of adding these to the config.h, we want to substitute them
+  dnl directly in the header we ship out with the library
+  HAVE_GNUC_C_VARARGS="#define HAVE_GNUC_VARARGS"
+  AC_SUBST(HAVE_GNUC_C_VARARGS)
 fi
 
 AC_MSG_CHECKING(for GNUC varargs macros in C++)
@@ -135,7 +144,10 @@ call_a(2,3);
 fi
 AC_MSG_RESULT($g_have_gnuc_cxx_varargs)
 if test "x$g_have_gnuc_cxx_varargs" = "xyes" ; then
-  AC_DEFINE([HAVE_GNUC_CXX_VARARGS], [1], [GNUC varargs macros in C++])
+  dnl instead of adding these to the config.h, we want to substitute them
+  dnl directly in the header we ship out with the library
+  HAVE_GNUC_CXX_VARARGS="#define HAVE_GNUC_VARARGS"
+  AC_SUBST(HAVE_GNUC_CXX_VARARGS)
 fi
 
 
@@ -187,6 +199,7 @@ fi
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
+                 src/mondemandlib.h
                  tests/Makefile
                  doxygen.config
                  pkgconfig-template.pc])

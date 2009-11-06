@@ -60,6 +60,7 @@ mondemand_transport_stderr_create(void)
   {
     transport->log_sender_function = &mondemand_transport_stderr_log_sender;
     transport->stats_sender_function = &mondemand_transport_stderr_stats_sender;
+    transport->destroy_function = &mondemand_transport_stderr_destroy;
     transport->userdata = NULL; /* not used */
   }
 
@@ -69,14 +70,6 @@ mondemand_transport_stderr_create(void)
 void
 mondemand_transport_stderr_destroy(struct mondemand_transport *transport)
 {
-  if( transport != NULL )
-  {
-    if(transport->userdata != NULL )
-    {
-      lwes_emitter_destroy(transport->userdata);
-    }
-  }
-
   m_free(transport);
 }
 
@@ -107,10 +100,18 @@ struct mondemand_transport *mondemand_transport_lwes_create_with_ttl(
                                            (LWES_SHORT_STRING) interface,
                                            (LWES_U_INT_32) port, emit_heartbeat,
                                            heartbeat_frequency, ttl);
-
-    transport->log_sender_function = &mondemand_transport_lwes_log_sender;
-    transport->stats_sender_function = &mondemand_transport_lwes_stats_sender;
-    transport->userdata = emitter;
+    if (emitter != NULL)
+      {
+        transport->log_sender_function = &mondemand_transport_lwes_log_sender;
+        transport->stats_sender_function = &mondemand_transport_lwes_stats_sender;
+        transport->destroy_function = &mondemand_transport_lwes_destroy;
+        transport->userdata = emitter;
+      }
+    else
+      {
+        m_free (transport);
+        transport = NULL;
+      }
   }
 
   return transport;
@@ -119,9 +120,16 @@ struct mondemand_transport *mondemand_transport_lwes_create_with_ttl(
 
 void mondemand_transport_lwes_destroy(struct mondemand_transport *transport)
 {
+  if( transport != NULL )
+  {
+    if(transport->userdata != NULL )
+    {
+      lwes_emitter_destroy(transport->userdata);
+    }
+  }
+
   m_free(transport);
 }
-
 
 /*==========================================================================*/
 /* Private API methods                                                      */
@@ -139,45 +147,39 @@ mondemand_transport_stderr_log_sender(
   int i=0;
   int j=0;
 
-  for(i=0; i<message_count; ++i)
-  {
-    if( messages[i].level >= M_LOG_EMERG 
-        && messages[i].level <= M_LOG_ALL )
+  for(i = 0; i < message_count; ++i)
     {
+      if (messages[i].level >= M_LOG_EMERG
+          && messages[i].level <= M_LOG_ALL)
+        {
+          fprintf (stderr, "[%s]", program_identifier);
+          if (mondemand_trace_id_compare (&messages[i].trace_id,
+                                          &MONDEMAND_NULL_TRACE_ID) != 0 )
+            {
+              fprintf (stderr, " : %ld", messages[i].trace_id._id);
+            }
+          fprintf (stderr, " : %s:%d",
+                   messages[i].filename, messages[i].line);
+          fprintf (stderr, " : %s : %s",
+                   MonDemandLogLevelStrings[messages[i].level],
+                   messages[i].message );
 
-      if( mondemand_trace_id_compare(&messages[i].trace_id,
-                                     &MONDEMAND_NULL_TRACE_ID) != 0 )
-      {
-        fprintf( stderr, "[%s] 0x%016lx : %s:%d : %s : %s\n",
-                 program_identifier,
-                 messages[i].trace_id._id, messages[i].filename,
-                 messages[i].line, 
-                 MonDemandLogLevelStrings[messages[i].level],
-                 messages[i].message );
-      } else {
-        fprintf( stderr, "[%s] %s:%d : %s : %s\n",
-                 program_identifier,
-                 messages[i].filename, messages[i].line,
-                 MonDemandLogLevelStrings[messages[i].level],
-                 messages[i].message );
-      }
+          if (context_count > 0)
+            {
+              for(j = 0; j < context_count; ++j )
+                {
+                  fprintf( stderr, " : %s=%s", contexts[j].key, contexts[j].value );
+                }
+            }
 
-      if( context_count > 0 )
-      {
-        for( j=0; j<context_count; ++j )
-        {  
-          fprintf( stderr, "%s = %s ", contexts[j].key, contexts[j].value );
-        }
-        fprintf( stderr, "\n" );
-      }
-
-      if( messages[i].repeat_count > 1 )
-      {
-        fprintf( stderr, " ... repeats %d times\n",
-                 messages[i].repeat_count );
-      }
-    } /* if( messages[i].level ... ) */
-  } /* for(i=0; i<message_count; ++i) */
+          if (messages[i].repeat_count > 1)
+            {
+              fprintf (stderr, " ... repeats %d times",
+                       messages[i].repeat_count);
+            }
+          fprintf (stderr, "\n");
+        } /* if( messages[i].level ... ) */
+    } /* for(i=0; i<message_count; ++i) */
 
   /* we don't need userdata so just satisfy -Wall */
   (void) userdata;
@@ -198,17 +200,16 @@ mondemand_transport_stderr_stats_sender(
   int i=0;
   int j=0;
 
-  fprintf( stderr, "[%s]", program_identifier );
-
   for(i=0; i<message_count; ++i)
   {
-    fprintf( stderr, " %s = %016ld ", stats[i].key, stats[i].counter );
+    fprintf( stderr, "[%s]", program_identifier );
+    fprintf( stderr, " : %s : %ld", stats[i].key, stats[i].counter );
 
     if( context_count > 0 )
     {
       for( j=0; j<context_count; ++j )
-      {  
-        fprintf( stderr, "%s = %s ", contexts[j].key, contexts[j].value );
+      {
+        fprintf( stderr, " : %s=%s", contexts[j].key, contexts[j].value );
       }
       fprintf( stderr, "\n" );
     }
@@ -322,7 +323,7 @@ mondemand_transport_lwes_stats_sender(
     {
       lwes_event_set_U_INT_16(event, "ctxt_num", context_count);
       for( j=0; j<context_count; ++j )
-      {  
+      {
         snprintf(key_buffer, sizeof(key_buffer), "ctxt_k%d", j);
         lwes_event_set_STRING(event, key_buffer, contexts[j].key);
         snprintf(key_buffer, sizeof(key_buffer), "ctxt_v%d", j);
