@@ -211,8 +211,9 @@ mondemand_transport_stderr_stats_sender(
       {
         fprintf( stderr, " : %s=%s", contexts[j].key, contexts[j].value );
       }
-      fprintf( stderr, "\n" );
     }
+
+    fprintf( stderr, "\n" );
   } /* for(i=0; i<message_count; ++i) */
 
   /* we don't need userdata so just satisfy -Wall */

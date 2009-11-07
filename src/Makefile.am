@@ -19,12 +19,16 @@ mymaintainercleanfiles = config.h.in
 # list of public library header files
 
 myheaderfiles = \
-                mondemandlib.h
+  m_hash.h \
+  mondemand_trace.h \
+  mondemand_transport.h \
+  mondemandlib.h
 
 # list of private library header files
 # these aren't installed or listed in the library common header
 
-myprivateheaderfiles =
+myprivateheaderfiles = \
+  m_mem.h
 
 # include a top level header which includes all other headers
 # if set, MUST be of the form @PACKAGEPACKED@.h
