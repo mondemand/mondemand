@@ -8,6 +8,7 @@
  */
 
 #include "m_hash.h"
+#include "mondemand_types.h"
 #include "mondemand_trace.h"
 #include "mondemand_transport.h"
 
@@ -337,33 +338,33 @@ int mondemand_log_real_va(struct mondemand_client *client,
 
 /*!\fn int mondemand_stats_inc(struct mondemand_client *client,
  *                             const char *filename, const int line,
- *                             const char *key, const int value)
+ *                             const char *key, const MStatCounter value)
  * \brief lower-level stats function that increments a named key with
  *        the given value
  */
 int mondemand_stats_inc(struct mondemand_client *client,
                         const char *filename, const int line,
-                        const char *key, const int value);
+                        const char *key, const MStatCounter value);
 
 /*!\fn int mondemand_stats_dec(struct mondemand_client *client,
  *                             const char *filename, const int line,
- *                             const char *key, const int value)
+ *                             const char *key, const MStatCounter value)
  * \brief lower-level stats function that decrements a named key with
  *        the given value
  */
 int mondemand_stats_dec(struct mondemand_client *client,
                         const char *filename, const int line,
-                        const char *key, const int value);
+                        const char *key, const MStatCounter value);
 
 /*!\fn int mondemand_stats_set(struct mondemand_client *client,
  *                             const char *filename, const int line,
- *                             const char *key, const int value)
+ *                             const char *key, const MStatCounter value)
  * \brief lower-level stats function that sets a named key with
  *        the given value
  */
 int mondemand_stats_set(struct mondemand_client *client,
                         const char *filename, const int line,
-                        const char *key, const int value);
+                        const char *key, const MStatCounter value);
 
 
 #endif /* __MONDEMAND_H_ */
