@@ -1,5 +1,5 @@
 /*======================================================================*
- * Copyright (C) 2009 Mondemand                                         *
+ * Copyright (C) 2010 Mondemand                                         *
  * All rights reserved.                                                 *
  *                                                                      *
  * This program is free software; you can redistribute it and/or modify *
@@ -25,7 +25,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "mondemand_transport.h"
 #include "mondemandlib.h"
 
 static const char help[] =
@@ -273,13 +272,12 @@ handle_stat_arg (const char *arg,
   stat_key = strsep (&buffer, sep);
   if (buffer != NULL)
     {
-      int stat_value = atoi (buffer);
+      MStatCounter stat_value = atoll (buffer);
       /* need to call the underlying implementation call because
          I need to specify different 'line' numbers so messages
          aren't counted as repeated */
       mondemand_stats_set (client, __FILE__, stat_count,
                            stat_key, stat_value);
-
       ret = 0;
     }
   else

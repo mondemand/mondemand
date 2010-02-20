@@ -17,29 +17,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,                   *
  * Boston, MA 02110-1301 USA.                                           *
  *======================================================================*/
-#ifndef __M_TRACE__
-#define __M_TRACE__
+#ifndef __MONDEMAND_TYPES_H__
+#define __MONDEMAND_TYPES_H__
 
-/* defines a trace_id structure. should not be accessed directly in case
- * the type changes. */
-struct mondemand_trace_id
-{
-  unsigned long _id;
-};
-extern const struct mondemand_trace_id MONDEMAND_NULL_TRACE_ID;
+/* stat counter type */
+typedef long long MStatCounter;
 
-
-/*!\fn mondemand_trace_id
- * \brief creates a trace ID from an unsigned long.
- */
-struct mondemand_trace_id mondemand_trace_id(unsigned long id);
-
-/*!\fn mondemand_trace_id_compare
- * \brief compares one trace_id to another.
- */
-int mondemand_trace_id_compare(const struct mondemand_trace_id *a,
-                               const struct mondemand_trace_id *b);
-
-
-#endif
-
+#endif /* __MONDEMAND_TYPES_H__ */

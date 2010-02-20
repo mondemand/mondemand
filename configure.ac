@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([mondemand], [0.1.0], [mondemand-devel@lists.sourceforge.net])
+AC_INIT([mondemand], [1.0.0], [mondemand-devel@lists.sourceforge.net])
 AM_INIT_AUTOMAKE
 
 dnl Determine the host type for the host specific inclusion below
@@ -62,7 +62,7 @@ dnl Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
 AC_TYPE_MODE_T
 AC_TYPE_SIZE_T
-AC_CHECK_TYPES(long long)
+AC_CHECK_TYPES([long long],[],[exit 1])
 AC_HEADER_TIME
 AC_STRUCT_TM
 

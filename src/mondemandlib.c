@@ -1,4 +1,22 @@
-
+/*======================================================================*
+ * Copyright (C) 2010 Mondemand                                         *
+ * All rights reserved.                                                 *
+ *                                                                      *
+ * This program is free software; you can redistribute it and/or modify *
+ * it under the terms of the GNU General Public License as published by *
+ * the Free Software Foundation; either version 2 of the License, or    *
+ * (at your option) any later version.                                  *
+ *                                                                      *
+ * This program is distributed in the hope that it will be useful,      *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of       *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        *
+ * GNU General Public License for more details.                         *
+ *                                                                      *
+ * You should have received a copy of the GNU General Public License    *
+ * along with this program; if not, write to the Free Software          *
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,                   *
+ * Boston, MA 02110-1301 USA.                                           *
+ *======================================================================*/
 #include "config.h"
 
 #include "m_mem.h"
@@ -13,14 +31,6 @@
 
 #define M_MESSAGE_MAX 2048
 #define M_MAX_MESSAGES 10
-
-/* stat counter type - must match mondemand_transport.h */
-#if HAVE_LONG_LONG
-typedef long long MStatCounter;
-#else
-typedef long MStatCounter;
-#endif
-
 
 /* client structure */
 struct mondemand_client
@@ -494,7 +504,7 @@ mondemand_log_real_va(struct mondemand_client *client,
 /* increment the value pointed at by key 'key' */
 int
 mondemand_stats_inc(struct mondemand_client *client, const char *filename,
-                    const int line, const char *key, const int value)
+                    const int line, const char *key, const MStatCounter value)
 {
   char buffer[FILENAME_MAX * 3];
   const char *real_key = key;
@@ -545,14 +555,14 @@ mondemand_stats_inc(struct mondemand_client *client, const char *filename,
 
 int
 mondemand_stats_dec(struct mondemand_client *client, const char *filename,
-                    const int line, const char *key, const int value)
+                    const int line, const char *key, const MStatCounter value)
 {
   return mondemand_stats_inc(client, filename, line, key, value * (-1));
 }
 
 int
 mondemand_stats_set(struct mondemand_client *client, const char *filename,
-                    const int line, const char *key, const int value)
+                    const int line, const char *key, const MStatCounter value)
 {
   char buffer[FILENAME_MAX * 3];
   const char *real_key = key;
@@ -573,7 +583,7 @@ mondemand_stats_set(struct mondemand_client *client, const char *filename,
     counter = m_hash_table_get( client->stats, real_key );
 
     if( counter == NULL )
-    { 
+    {
       /* create a new entry */
       new_key = strdup(real_key);
       counter = (MStatCounter *) m_try_malloc( sizeof(MStatCounter) );
@@ -591,7 +601,7 @@ mondemand_stats_set(struct mondemand_client *client, const char *filename,
           m_free(counter);
           return -3;
         }
-      } 
+      }
     } else {
       /* we found the entry, simply increment */
       *counter = value;
@@ -720,7 +730,7 @@ mondemand_dispatch_stats(struct mondemand_client *client)
 
       /* fetch the keys to all the contexts */
       context_keys = m_hash_table_keys( client->contexts );
-     
+
       contexts = (struct mondemand_context *)
                    m_try_malloc0(sizeof(struct mondemand_context) *
                                  client->contexts->num);

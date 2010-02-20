@@ -1,3 +1,8 @@
+Version 1.0.0 (molinaro)
+  * removed option of not using long long's it led to an odd bug, besides lwes
+    uses long long so things won't work without it anyway, configure will hard
+    fail if it's missing.
+
 Version 0.1.0 (molinaro)
   * added a tool for sending log messages and stats via the command line
   * fixed header so that #defines will work now

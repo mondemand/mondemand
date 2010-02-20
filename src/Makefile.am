@@ -22,6 +22,7 @@ myheaderfiles = \
   m_hash.h \
   mondemand_trace.h \
   mondemand_transport.h \
+  mondemand_types.h \
   mondemandlib.h
 
 # list of private library header files
