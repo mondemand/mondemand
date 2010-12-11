@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 
-AC_INIT([mondemand], [1.0.0], [mondemand-devel@lists.sourceforge.net])
+AC_INIT([mondemand], [1.0.1], [mondemand-devel@lists.sourceforge.net])
 AM_INIT_AUTOMAKE
 
 dnl Determine the host type for the host specific inclusion below
@@ -54,7 +54,7 @@ AC_CHECK_HEADER(valgrind/valgrind.h,
                           [Define to 1 if the <valgrind/valgrind.h> header is on the system]))
 
 dnl check for LWES
-PKG_CHECK_MODULES([LWES], [lwes-0 >= 0.22.0])
+PKG_CHECK_MODULES([LWES], [lwes-0 >= 0.23.1])
 AC_SUBST(LWES_CFLAGS)
 AC_SUBST(LWES_LIBS)
 
