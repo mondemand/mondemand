@@ -1,3 +1,6 @@
+Version 1.0.1 (molinaro)
+  * Changing license from GPLv2 to New BSD.
+
 Version 1.0.0 (molinaro)
   * removed option of not using long long's it led to an odd bug, besides lwes
     uses long long so things won't work without it anyway, configure will hard

@@ -28,6 +28,7 @@ pkgconfig_DATA = @PACKAGE_NAME@-@MAJOR_VERSION@.pc
 
 EXTRA_DIST =                            \
     pkgconfig-template.pc.in            \
+    LICENSE                             \
     ${myextradist}
 
 CLEANFILES =                            \
