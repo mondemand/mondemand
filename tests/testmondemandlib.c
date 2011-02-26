@@ -26,7 +26,7 @@
 static int malloc_fail = 0;
 static int realloc_fail = 0;
 
-void *my_malloc0(size_t size)
+static void *my_malloc0(size_t size)
 {
   void *ret = NULL;
   if( malloc_fail == 0 )
@@ -36,17 +36,7 @@ void *my_malloc0(size_t size)
   return ret;
 }
 
-void *my_malloc(size_t size)
-{
-  void *ret = NULL;
-  if( malloc_fail == 0 )
-  {
-    ret = m_try_malloc(size);
-  }
-  return ret;
-}
-
-void *my_realloc(void *ptr, size_t size)
+static void *my_realloc(void *ptr, size_t size)
 {
   void *ret = NULL;
   if( realloc_fail == 0 )
@@ -56,10 +46,9 @@ void *my_realloc(void *ptr, size_t size)
   return ret;
 }
 
-
 /* wrap strdup to cause memory problems */
 static int strdup_fail = 0;
-char *my_strdup(const char *s)
+static char *my_strdup(const char *s)
 {
   void *ret = NULL;
   if( strdup_fail == 0 )
@@ -71,7 +60,7 @@ char *my_strdup(const char *s)
 
 /* wrap m_hash_table_set to make it fail */
 static int m_hash_fail = 0;
-int
+static int
 my_m_hash_table_set(struct m_hash_table *hash_table, char *key, void *value)
 {
   int ret = -3;
@@ -84,14 +73,12 @@ my_m_hash_table_set(struct m_hash_table *hash_table, char *key, void *value)
 
 
 #define m_try_malloc0 my_malloc0
-#define m_try_malloc my_malloc
 #define m_try_realloc my_realloc
 #undef strdup
 #define strdup my_strdup
 #define m_hash_table_set my_m_hash_table_set
 #include "mondemandlib.c"
 #undef m_try_malloc0
-#undef m_try_malloc
 #undef m_try_realloc
 #undef strdup
 #undef m_hash_table_set
@@ -101,7 +88,7 @@ my_m_hash_table_set(struct m_hash_table *hash_table, char *key, void *value)
 static int fail_log_callback = 0;
 static int fail_stats_callback = 0;
 
-int
+static int
 log_sender_callback(const char *prog_id,
                     const struct mondemand_log_message messages[],
                     const int message_count,
@@ -132,7 +119,7 @@ log_sender_callback(const char *prog_id,
   return 0;
 }
 
-int
+static int
 stats_sender_callback(const char *prog_id,
                       const struct mondemand_stats_message stats[],
                       const int message_count,
@@ -163,7 +150,7 @@ stats_sender_callback(const char *prog_id,
   return 0;
 }
 
-void
+static void
 destroy_callback (struct mondemand_transport *transport)
 {
   free(transport);
@@ -335,21 +322,41 @@ main(void)
   malloc_fail = 0;
 
   /* change some stats */
-  mondemand_stats_inc(client, __FILE__, __LINE__, "speed", 999999);
-  mondemand_stats_inc(client, __FILE__, __LINE__, NULL, 11111);
-  mondemand_stats_inc(client, __FILE__, __LINE__, "speed", 111111);
-  mondemand_stats_dec(client, __FILE__, __LINE__, "speed", 111111);
-  mondemand_stats_set(client, __FILE__, __LINE__, "speed", 888888);
-  mondemand_stats_set(client, __FILE__, __LINE__, NULL, 101010);
+  mondemand_stats_perform_op (client, __FILE__, __LINE__,
+                              MONDEMAND_INC, MONDEMAND_COUNTER,
+                              "speed", 999999);
+  mondemand_stats_perform_op (client, __FILE__, __LINE__,
+                              MONDEMAND_INC, MONDEMAND_COUNTER,
+                              NULL, 11111);
+  mondemand_stats_perform_op (client, __FILE__, __LINE__,
+                              MONDEMAND_INC, MONDEMAND_COUNTER,
+                              "speed", 111111);
+  mondemand_stats_perform_op (client, __FILE__, __LINE__,
+                              MONDEMAND_DEC, MONDEMAND_COUNTER,
+                              "speed", 111111);
+  mondemand_stats_perform_op (client, __FILE__, __LINE__,
+                              MONDEMAND_SET, MONDEMAND_COUNTER,
+                              "speed", 888888);
+  mondemand_stats_perform_op (client, __FILE__, __LINE__,
+                              MONDEMAND_SET, MONDEMAND_COUNTER,
+                              NULL, 101010);
 
   malloc_fail = 1;
-  mondemand_stats_inc(client, __FILE__, __LINE__, "failboat", 101);
-  mondemand_stats_set(client, __FILE__, __LINE__, "foolgle", 404);
+  mondemand_stats_perform_op (client, __FILE__, __LINE__,
+                              MONDEMAND_INC, MONDEMAND_COUNTER,
+                              "failboat", 101);
+  mondemand_stats_perform_op (client, __FILE__, __LINE__,
+                              MONDEMAND_SET, MONDEMAND_COUNTER,
+                              "foolgle", 404);
   malloc_fail = 0;
 
   m_hash_fail = 1;
-  mondemand_stats_inc(client, __FILE__, __LINE__, "failwhale", 202);
-  mondemand_stats_set(client, __FILE__, __LINE__, "windoesnot", 500);
+  mondemand_stats_perform_op (client, __FILE__, __LINE__,
+                              MONDEMAND_INC, MONDEMAND_COUNTER,
+                              "failwhale", 202);
+  mondemand_stats_perform_op (client, __FILE__, __LINE__,
+                              MONDEMAND_SET, MONDEMAND_COUNTER,
+                              "windoesnot", 500);
   m_hash_fail = 0;
 
   /* fail */
@@ -365,10 +372,12 @@ main(void)
      comes */
   mondemand_add_transport(client, stderr_transport);
 
-  mondemand_stats_set(client, __FILE__, __LINE__, "hlep", 4949494);
+  mondemand_stats_perform_op (client, __FILE__, __LINE__,
+                              MONDEMAND_SET, MONDEMAND_COUNTER,
+                              "hlep", 4949494);
   fail_stats_callback = 1;
   mondemand_flush(client);
-  mondemand_flush_stats_no_reset(client);
+  mondemand_flush_stats(client);
   fail_stats_callback = 0;
 
   realloc_fail = 1;
@@ -376,8 +385,6 @@ main(void)
   realloc_fail = 0;
 
   mondemand_flush_stats(client);
-  mondemand_flush_stats_no_reset(client);
-  mondemand_flush_stats_no_reset(NULL);
   mondemand_flush(client);
 
   /* free up the client and transports */

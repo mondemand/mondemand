@@ -22,7 +22,7 @@
 static int malloc_count = 0;
 static int malloc_fail_at = -1;
 
-void *my_malloc(size_t size)
+static void *my_malloc(size_t size)
 {
   void *ret = NULL;
   malloc_count++;

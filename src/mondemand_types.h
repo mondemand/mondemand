@@ -12,7 +12,28 @@
 #ifndef __MONDEMAND_TYPES_H__
 #define __MONDEMAND_TYPES_H__
 
-/* stat counter type */
-typedef long long MStatCounter;
+/* statistic value */
+typedef long long MondemandStatValue;
+
+/* statistic types */
+typedef enum {
+  MONDEMAND_UNKNOWN = 0,
+  MONDEMAND_GAUGE = 1,
+  MONDEMAND_COUNTER = 2
+} MondemandStatType;
+
+/* lookup table for strings */
+static const char * const MondemandStatTypeString[] = {
+  "unknown",
+  "gauge",
+  "counter"
+};
+
+/* statistic operation */
+typedef enum {
+  MONDEMAND_INC = 0,
+  MONDEMAND_DEC = 1,
+  MONDEMAND_SET = 2
+} MondemandOp;
 
 #endif /* __MONDEMAND_TYPES_H__ */

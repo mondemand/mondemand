@@ -19,7 +19,6 @@
  *         transport.
  */
 
-#include "m_hash.h"
 #include "mondemand_types.h"
 #include "mondemand_trace.h"
 #include "mondemand_transport.h"
@@ -64,10 +63,8 @@ static const char * const MonDemandLogLevelStrings[] = {
   "all"
 };
 
-
 /* forward declaration of opaque structs */
 struct mondemand_client;
-
 
 /*!\fn mondemand_client_create(const char *program_identifier)
  * \brief Constructor used to create a new logging client.
@@ -191,11 +188,10 @@ int mondemand_flush_logs(struct mondemand_client *client);
  */
 int mondemand_flush_stats(struct mondemand_client *client);
 
-/*!\fn mondemand_flush_stats_no_reset
- * \brief flushes stats to the transports, but does NOT reset the counters.
- *        this is useful for monotonically increasing counters.
+/*!\fn mondemand_reset_stats
+ * \brief reset all counters and gauges to zero
  */
-int mondemand_flush_stats_no_reset(struct mondemand_client *client);
+int mondemand_reset_stats (struct mondemand_client *client);
 
 /*!\fn mondemand_flush
  * \brief flushes logs and stats.
@@ -206,6 +202,11 @@ int mondemand_flush(struct mondemand_client *client);
  * \brief given a string return a log level
  */
 int mondemand_log_level_from_string (const char *level);
+
+/*!\fn mondemand_stat_type_from_string
+ * \brief given a string return a stat type
+ */
+MondemandStatType mondemand_stat_type_from_string (const char *type);
 
 /*=====================================================================*/
 /* Useful Macros                                                       */
@@ -278,44 +279,53 @@ int mondemand_log_level_from_string (const char *level);
 
 /* increments a counter by 1 using the filename:line */
 #define mondemand_increment(m) \
-  mondemand_stats_inc(m, __FILE__, __LINE__, NULL, 1)
+  mondemand_stats_peform_op (m, __FILE__, __LINE__, \
+                             MONDEMAND_INC, MONDEMAND_COUNTER, NULL, 1)
 
 /* increments a counter by value using the filename:line */
 #define mondemand_increment_value(m, v) \
-  mondemand_stats_inc(m, __FILE__, __LINE__, NULL, v)
+  mondemand_stats_perform_op (m, __FILE__, __LINE__, \
+                              MONDEMAND_INC, MONDEMAND_COUNTER, NULL, v)
 
 /* increments the specified key by 1 */
 #define mondemand_increment_key(m, k) \
-  mondemand_stats_inc(m, __FILE__, __LINE__, k, 1);
+  mondemand_stats_perform_op (m, __FILE__, __LINE__, \
+                              MONDEMAND_INC, MONDEMAND_COUNTER, k, 1);
 
 /* increments the specified key by value */
 #define mondemand_increment_key_by_val(m, k, v) \
-  mondemand_stats_inc(m, __FILE__, __LINE__, k, v)
+  mondemand_stats_perform_op (m, __FILE__, __LINE__, \
+                              MONDEMAND_INC, MONDEMAND_COUNTER, k, v)
 
 /* decrements a counter by 1 using filename:line */
 #define mondemand_decrement(m) \
-  mondemand_stats_dec(m, __FILE__, __LINE__, NULL, 1)
+  mondemand_stats_perform_op (m, __FILE__, __LINE__, \
+                              MONDEMAND_DEC, MONDEMAND_COUNTER, NULL, 1)
 
 /* decrements a counter by value using filename:line */
 #define mondemand_decrement_value(m, v) \
-  mondemand_stats_dec(m, __FILE__, __LINE__, NULL, v)
+  mondemand_stats_perform_op (m, __FILE__, __LINE__, \
+                              MONDEMAND_DEC, MONDEMAND_COUNTER, NULL, v)
 
 /* decrements the named key by 1 */
 #define mondemand_decrement_key(m, k) \
-  mondemand_stats_dec(m, __FILE__, __LINE__, k, 1);
+  mondemand_stats_perform_op (m, __FILE__, __LINE__, \
+                              MONDEMAND_DEC, MONDEMAND_COUNTER, k, 1);
 
 /* decrements the named key by value */
 #define mondemand_decrement_key_by_val(m, k, v) \
-  mondemand_stats_dec(m, __FILE__, __LINE__, k, v)
+  mondemand_stats_perform_op (m, __FILE__, __LINE__, \
+                              MONDEMAND_DEC, MONDEMAND_COUNTER, k, v)
 
-/* sets a counter by value using filename:line */
+/* sets a gauge to a value using filename:line */
 #define mondemand_set_by_val(m, v) \
-  mondemand_stats_set(m, __FILE__, __LINE__, NULL, v)
+  mondemand_stats_perform_op (m, __FILE__, __LINE__, \
+                              MONDEMAND_SET, MONDEMAND_GAUGE, NULL, v)
 
 /* set the specified key to the value specified */
 #define mondemand_set_key_by_val(m, k, v) \
-  mondemand_stats_set(m, __FILE__, __LINE__, k, v)
-
+  mondemand_stats_perform_op (m, __FILE__, __LINE__, \
+                              MONDEMAND_SET, MONDEMAND_GAUGE, k, v)
 
 /*=====================================================================*/
 /* Semi-private functions                                              */
@@ -329,7 +339,9 @@ int mondemand_log_level_from_string (const char *level);
  * \brief full-featured logging function, usually called by macros.
  */
 int mondemand_log_real(struct mondemand_client *client,
-                       const char *filename, const int line, const int level,
+                       const char *filename,
+                       const int line,
+                       const int level,
                        const struct mondemand_trace_id trace_id,
                        const char *format, ...);
 
@@ -343,41 +355,30 @@ int mondemand_log_real(struct mondemand_client *client,
  *        ellipsis style arguments
  */
 int mondemand_log_real_va(struct mondemand_client *client,
-                          const char *filename, const int line, 
+                          const char *filename,
+                          const int line,
                           const int level,
                           const struct mondemand_trace_id trace_id,
-                          const char *format, va_list args);
+                          const char *format,
+                          va_list args);
 
-/*!\fn int mondemand_stats_inc(struct mondemand_client *client,
- *                             const char *filename, const int line,
- *                             const char *key, const MStatCounter value)
- * \brief lower-level stats function that increments a named key with
- *        the given value
+/*!\fn int mondemand_stats_perform_op (struct mondemand_client *client,
+ *                                     const char *filename,
+ *                                     const int line,
+ *                                     const MondemandOp op,
+ *                                     const MondemandStatType type,
+ *                                     const char *key,
+ *                                     const MondemandStatValue value)
+ * \brief lower-level stats function performs the given operation on the
+ *        given type of stat
  */
-int mondemand_stats_inc(struct mondemand_client *client,
-                        const char *filename, const int line,
-                        const char *key, const MStatCounter value);
-
-/*!\fn int mondemand_stats_dec(struct mondemand_client *client,
- *                             const char *filename, const int line,
- *                             const char *key, const MStatCounter value)
- * \brief lower-level stats function that decrements a named key with
- *        the given value
- */
-int mondemand_stats_dec(struct mondemand_client *client,
-                        const char *filename, const int line,
-                        const char *key, const MStatCounter value);
-
-/*!\fn int mondemand_stats_set(struct mondemand_client *client,
- *                             const char *filename, const int line,
- *                             const char *key, const MStatCounter value)
- * \brief lower-level stats function that sets a named key with
- *        the given value
- */
-int mondemand_stats_set(struct mondemand_client *client,
-                        const char *filename, const int line,
-                        const char *key, const MStatCounter value);
-
+int
+mondemand_stats_perform_op (struct mondemand_client *client,
+                            const char *filename,
+                            const int line,
+                            const MondemandOp op,
+                            const MondemandStatType type,
+                            const char *key,
+                            const MondemandStatValue value);
 
 #endif /* __MONDEMAND_H_ */
-

@@ -51,9 +51,9 @@ static const char help[] =
   ""                                                                   "\n"
   "  Context Options:"                                                 "\n"
   ""                                                                   "\n"
-  "    -c <key>=<value>"                                               "\n"
+  "    -c <key>:<value>"                                               "\n"
   "      Add the context <key> with the value <value> to all mondemand""\n"
-  "      messages.  The key should not contain a '='."                 "\n"
+  "      messages.  The key should not contain a ':'."                 "\n"
   ""                                                                   "\n"
   "    -c may be specified multiple times"                             "\n"
   ""                                                                   "\n"
@@ -72,12 +72,14 @@ static const char help[] =
   ""                                                                   "\n"
   "  Stats Options:"                                                   "\n"
   ""                                                                   "\n"
-  "    -s <name>=<value>"                                              "\n"
-  "      Send the value <value> for the statistic named <name>."       "\n"
+  "    -s <type>:<name>:<value>"                                       "\n"
+  "      Send the value <value> for the statistic named <name>"        "\n"
+  "      of the given <type>."                                         "\n"
   "      May be specified multiple times."                             "\n"
   "      If the same name is given, the last value will be the one"    "\n"
   "      sent via mondemand."                                          "\n"
-  "      The name should not contain a '='."                           "\n"
+  "      The name should not contain a ':'."                           "\n"
+  "      Type should be either 'gauge' or 'counter'"                   "\n"
   ""                                                                   "\n"
   "  Other Options:"                                                   "\n"
   ""                                                                   "\n"
@@ -92,7 +94,7 @@ static const char help[] =
  */
 #define MAX_WORDS 10
 
-struct mondemand_transport *
+static struct mondemand_transport *
 handle_transport_arg (const char *arg)
 {
   const char *sep  = ":";
@@ -173,11 +175,11 @@ handle_transport_arg (const char *arg)
   return transport;
 }
 
-int
+static int
 handle_context_arg (const char *arg,
                     struct mondemand_client *client)
 {
-  const char *sep  = "=";
+  const char *sep  = ":";
   char *ctxt_key;
   char *buffer;
   char *tofree;
@@ -197,7 +199,7 @@ handle_context_arg (const char *arg,
   return ret;
 }
 
-int
+static int
 handle_log_arg (const char *arg,
                 struct mondemand_client *client,
                 struct mondemand_trace_id trace_id,
@@ -244,15 +246,17 @@ handle_log_arg (const char *arg,
   return ret;
 }
 
-int
+static int
 handle_stat_arg (const char *arg,
                 struct mondemand_client *client,
                 int stat_count)
 {
-  const char *sep  = "=";
+  const char *sep  = ":";
+  char *text_type;
   char *stat_key;
   char *buffer;
   char *tofree;
+  MondemandStatType type;
   int ret = -1;
 
   tofree = buffer = strdup (arg);
@@ -261,20 +265,33 @@ handle_stat_arg (const char *arg,
       return ret;
     }
 
-  stat_key = strsep (&buffer, sep);
-  if (buffer != NULL)
+  text_type = strsep (&buffer, sep);
+  type = mondemand_stat_type_from_string (text_type);
+  if (type == MONDEMAND_UNKNOWN)
     {
-      MStatCounter stat_value = atoll (buffer);
-      /* need to call the underlying implementation call because
-         I need to specify different 'line' numbers so messages
-         aren't counted as repeated */
-      mondemand_stats_set (client, __FILE__, stat_count,
-                           stat_key, stat_value);
-      ret = 0;
+      fprintf (stderr, "ERROR: valid types are 'counter' and 'gauge'\n");
     }
   else
     {
-      fprintf (stderr, "WARNING: not sending empty statistic %s\n",stat_key);
+      stat_key = strsep (&buffer, sep);
+      if (buffer != NULL)
+        {
+          MondemandStatValue stat_value = atoll (buffer);
+          /* need to call the underlying implementation call because
+             I need to specify different 'line' numbers so messages
+             aren't counted as repeated */
+          mondemand_stats_perform_op (client, __FILE__, stat_count,
+                                      MONDEMAND_SET,
+                                      type,
+                                      stat_key,
+                                      stat_value);
+          ret = 0;
+        }
+      else
+        {
+          fprintf (stderr, "WARNING: not sending empty statistic %s\n",
+                   stat_key);
+        }
     }
 
   free (tofree);

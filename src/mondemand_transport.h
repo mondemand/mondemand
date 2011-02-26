@@ -39,7 +39,8 @@ struct mondemand_log_message
 struct mondemand_stats_message
 {
   const char *key;
-  MStatCounter counter;
+  MondemandStatValue value;
+  MondemandStatType type;
 };
 
 /* define callback functions */

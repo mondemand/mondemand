@@ -63,16 +63,19 @@ mondemand_transport_stderr_create(void)
 {
   struct mondemand_transport *transport = NULL;
 
-  transport = (struct mondemand_transport *)  
-                m_try_malloc0(sizeof(struct mondemand_transport));
+  transport = (struct mondemand_transport *)
+    m_try_malloc0(sizeof(struct mondemand_transport));
 
   if( transport != NULL )
-  {
-    transport->log_sender_function = &mondemand_transport_stderr_log_sender;
-    transport->stats_sender_function = &mondemand_transport_stderr_stats_sender;
-    transport->destroy_function = &mondemand_transport_stderr_destroy;
-    transport->userdata = NULL; /* not used */
-  }
+    {
+      transport->log_sender_function =
+        &mondemand_transport_stderr_log_sender;
+      transport->stats_sender_function =
+        &mondemand_transport_stderr_stats_sender;
+      transport->destroy_function =
+        &mondemand_transport_stderr_destroy;
+      transport->userdata = NULL; /* not used */
+    }
 
   return transport;
 }
@@ -102,27 +105,34 @@ struct mondemand_transport *mondemand_transport_lwes_create_with_ttl(
   struct lwes_emitter *emitter = NULL;
 
   transport = (struct mondemand_transport *)
-                m_try_malloc0(sizeof(struct mondemand_transport));
+    m_try_malloc0(sizeof(struct mondemand_transport));
 
   if( transport != NULL )
-  {
-    emitter = lwes_emitter_create_with_ttl((LWES_SHORT_STRING) address,
-                                           (LWES_SHORT_STRING) interface,
-                                           (LWES_U_INT_32) port, emit_heartbeat,
-                                           heartbeat_frequency, ttl);
-    if (emitter != NULL)
-      {
-        transport->log_sender_function = &mondemand_transport_lwes_log_sender;
-        transport->stats_sender_function = &mondemand_transport_lwes_stats_sender;
-        transport->destroy_function = &mondemand_transport_lwes_destroy;
-        transport->userdata = emitter;
-      }
-    else
-      {
-        m_free (transport);
-        transport = NULL;
-      }
-  }
+    {
+      emitter =
+        lwes_emitter_create_with_ttl ((LWES_SHORT_STRING) address,
+                                      (LWES_SHORT_STRING) interface,
+                                      (LWES_U_INT_32) port,
+                                      emit_heartbeat,
+                                      heartbeat_frequency,
+                                      ttl);
+      if (emitter != NULL)
+        {
+          transport->log_sender_function =
+            &mondemand_transport_lwes_log_sender;
+          transport->stats_sender_function =
+            &mondemand_transport_lwes_stats_sender;
+          transport->destroy_function =
+            &mondemand_transport_lwes_destroy;
+          transport->userdata =
+            emitter;
+        }
+      else
+        {
+          m_free (transport);
+          transport = NULL;
+        }
+    }
 
   return transport;
 
@@ -131,12 +141,12 @@ struct mondemand_transport *mondemand_transport_lwes_create_with_ttl(
 void mondemand_transport_lwes_destroy(struct mondemand_transport *transport)
 {
   if( transport != NULL )
-  {
-    if(transport->userdata != NULL )
     {
-      lwes_emitter_destroy(transport->userdata);
+      if(transport->userdata != NULL )
+        {
+          lwes_emitter_destroy(transport->userdata);
+        }
     }
-  }
 
   m_free(transport);
 }
@@ -178,7 +188,8 @@ mondemand_transport_stderr_log_sender(
             {
               for(j = 0; j < context_count; ++j )
                 {
-                  fprintf( stderr, " : %s=%s", contexts[j].key, contexts[j].value );
+                  fprintf ( stderr, " : %s=%s", contexts[j].key,
+                            contexts[j].value );
                 }
             }
 
@@ -211,20 +222,23 @@ mondemand_transport_stderr_stats_sender(
   int j=0;
 
   for(i=0; i<message_count; ++i)
-  {
-    fprintf( stderr, "[%s]", program_identifier );
-    fprintf( stderr, " : %s : %lld", stats[i].key, stats[i].counter );
-
-    if( context_count > 0 )
     {
-      for( j=0; j<context_count; ++j )
-      {
-        fprintf( stderr, " : %s=%s", contexts[j].key, contexts[j].value );
-      }
-    }
+      fprintf( stderr, "[%s]", program_identifier );
+      fprintf( stderr, " %s : %s : %lld",
+               MondemandStatTypeString[stats[i].type],
+               stats[i].key,
+               stats[i].value);
 
-    fprintf( stderr, "\n" );
-  } /* for(i=0; i<message_count; ++i) */
+      if( context_count > 0 )
+        {
+          for( j=0; j<context_count; ++j )
+            {
+              fprintf( stderr, " : %s=%s", contexts[j].key, contexts[j].value );
+            }
+        }
+
+      fprintf( stderr, "\n" );
+    } /* for(i=0; i<message_count; ++i) */
 
   /* we don't need userdata so just satisfy -Wall */
   (void) userdata;
@@ -248,55 +262,57 @@ mondemand_transport_lwes_log_sender(
   char key_buffer[31];
 
   if( message_count > 0 )
-  {
-    event = lwes_event_create(NULL, (LWES_SHORT_STRING) LWES_LOG_MSG);
-    lwes_event_set_STRING(event, "prog_id", program_identifier);
-    lwes_event_set_U_INT_16(event, "num", message_count);
-
-    for(i=0; i<message_count; ++i)
     {
-      if( messages[i].level >= M_LOG_EMERG 
-          && messages[i].level <= M_LOG_ALL )
-      {
-        if( mondemand_trace_id_compare(&messages[i].trace_id,
-                                       &MONDEMAND_NULL_TRACE_ID) != 0 )
+      event = lwes_event_create(NULL, (LWES_SHORT_STRING) LWES_LOG_MSG);
+      lwes_event_set_STRING(event, "prog_id", program_identifier);
+      lwes_event_set_U_INT_16(event, "num", message_count);
+
+      for(i=0; i<message_count; ++i)
         {
-          snprintf(key_buffer, sizeof(key_buffer), "trace_id%d", i);
-          lwes_event_set_U_INT_64(event, key_buffer, messages[i].trace_id._id);
+          if( messages[i].level >= M_LOG_EMERG 
+              && messages[i].level <= M_LOG_ALL )
+            {
+              if( mondemand_trace_id_compare(&messages[i].trace_id,
+                                             &MONDEMAND_NULL_TRACE_ID) != 0 )
+                {
+                  snprintf(key_buffer, sizeof(key_buffer), "trace_id%d", i);
+                  lwes_event_set_U_INT_64(event, key_buffer,
+                                          messages[i].trace_id._id);
+                }
+
+              snprintf(key_buffer, sizeof(key_buffer), "f%d", i);
+              lwes_event_set_STRING(event, key_buffer, messages[i].filename);
+              snprintf(key_buffer, sizeof(key_buffer), "l%d", i);
+              lwes_event_set_U_INT_32(event, key_buffer, messages[i].line);
+              snprintf(key_buffer, sizeof(key_buffer), "p%d", i);
+              lwes_event_set_U_INT_32(event, key_buffer, messages[i].level);
+              snprintf(key_buffer, sizeof(key_buffer), "m%d", i);
+              lwes_event_set_STRING(event, key_buffer, messages[i].message);
+
+              if( messages[i].repeat_count > 1 )
+                {
+                  snprintf(key_buffer, sizeof(key_buffer), "r%d", i);
+                  lwes_event_set_U_INT_16(event, key_buffer,
+                                          messages[i].repeat_count);
+                }
+            }
+        } /* for(i=0; i<message_count; ++i) */
+
+      if( context_count > 0 )
+        {
+          lwes_event_set_U_INT_16(event, "ctxt_num", context_count);
+          for( j=0; j<context_count; ++j )
+            {
+              snprintf(key_buffer, sizeof(key_buffer), "ctxt_k%d", j);
+              lwes_event_set_STRING(event, key_buffer, contexts[j].key);
+              snprintf(key_buffer, sizeof(key_buffer), "ctxt_v%d", j);
+              lwes_event_set_STRING(event, key_buffer, contexts[j].value);
+            }
         }
 
-        snprintf(key_buffer, sizeof(key_buffer), "f%d", i);
-        lwes_event_set_STRING(event, key_buffer, messages[i].filename);
-        snprintf(key_buffer, sizeof(key_buffer), "l%d", i);
-        lwes_event_set_U_INT_32(event, key_buffer, messages[i].line);
-        snprintf(key_buffer, sizeof(key_buffer), "p%d", i);
-        lwes_event_set_U_INT_32(event, key_buffer, messages[i].level);
-        snprintf(key_buffer, sizeof(key_buffer), "m%d", i);
-        lwes_event_set_STRING(event, key_buffer, messages[i].message);
-
-        if( messages[i].repeat_count > 1 )
-        {
-          snprintf(key_buffer, sizeof(key_buffer), "r%d", i);
-          lwes_event_set_U_INT_16(event, key_buffer, messages[i].repeat_count);
-        }
-      }
-    } /* for(i=0; i<message_count; ++i) */
-
-    if( context_count > 0 )
-    {
-      lwes_event_set_U_INT_16(event, "ctxt_num", context_count);
-      for( j=0; j<context_count; ++j )
-      {  
-        snprintf(key_buffer, sizeof(key_buffer), "ctxt_k%d", j);
-        lwes_event_set_STRING(event, key_buffer, contexts[j].key);
-        snprintf(key_buffer, sizeof(key_buffer), "ctxt_v%d", j);
-        lwes_event_set_STRING(event, key_buffer, contexts[j].value);
-      }
-    }
-
-    lwes_emitter_emit(emitter, event);
-    lwes_event_destroy(event);
-  } /* if( message_count > 0 ) */
+      lwes_emitter_emit(emitter, event);
+      lwes_event_destroy(event);
+    } /* if( message_count > 0 ) */
 
   return 0;
 }
@@ -317,38 +333,37 @@ mondemand_transport_lwes_stats_sender(
   char key_buffer[31];
 
   if( message_count > 0 )
-  {
-    event = lwes_event_create(NULL, (LWES_SHORT_STRING) LWES_STATS_MSG);
-    lwes_event_set_STRING(event, "prog_id", program_identifier);
-    lwes_event_set_U_INT_16(event, "num", message_count);
-
-    for(i=0; i<message_count; ++i)
     {
-      snprintf(key_buffer, sizeof(key_buffer), "k%d", i);
-      lwes_event_set_STRING(event, key_buffer, stats[i].key);
-      snprintf(key_buffer, sizeof(key_buffer), "v%d", i);
-      lwes_event_set_INT_64(event, key_buffer, stats[i].counter);
-    }
+      event = lwes_event_create(NULL, (LWES_SHORT_STRING) LWES_STATS_MSG);
+      lwes_event_set_STRING(event, "prog_id", program_identifier);
+      lwes_event_set_U_INT_16(event, "num", message_count);
 
-    if( context_count > 0 )
-    {
-      lwes_event_set_U_INT_16(event, "ctxt_num", context_count);
-      for( j=0; j<context_count; ++j )
-      {
-        snprintf(key_buffer, sizeof(key_buffer), "ctxt_k%d", j);
-        lwes_event_set_STRING(event, key_buffer, contexts[j].key);
-        snprintf(key_buffer, sizeof(key_buffer), "ctxt_v%d", j);
-        lwes_event_set_STRING(event, key_buffer, contexts[j].value);
-      }
-    }
+      for(i=0; i<message_count; ++i)
+        {
+          snprintf (key_buffer, sizeof(key_buffer), "t%d", i);
+          lwes_event_set_STRING (event, key_buffer,
+                                 MondemandStatTypeString[stats[i].type]);
+          snprintf (key_buffer, sizeof(key_buffer), "k%d", i);
+          lwes_event_set_STRING (event, key_buffer, stats[i].key);
+          snprintf (key_buffer, sizeof(key_buffer), "v%d", i);
+          lwes_event_set_INT_64 (event, key_buffer, stats[i].value);
+        }
 
-    lwes_emitter_emit(emitter, event);
-    lwes_event_destroy(event);
-  }
+      if( context_count > 0 )
+        {
+          lwes_event_set_U_INT_16(event, "ctxt_num", context_count);
+          for( j=0; j<context_count; ++j )
+            {
+              snprintf(key_buffer, sizeof(key_buffer), "ctxt_k%d", j);
+              lwes_event_set_STRING(event, key_buffer, contexts[j].key);
+              snprintf(key_buffer, sizeof(key_buffer), "ctxt_v%d", j);
+              lwes_event_set_STRING(event, key_buffer, contexts[j].value);
+            }
+        }
+
+      lwes_emitter_emit(emitter, event);
+      lwes_event_destroy(event);
+    }
 
   return 0;
 }
-
-
-
-
