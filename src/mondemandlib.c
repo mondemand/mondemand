@@ -29,6 +29,10 @@ struct mondemand_client
 {
   /* program identifier */
   char *prog_id;
+  /* trace id for trace messages only */
+  char *trace_id;
+  /* owner for trace messages only */
+  char *owner;
   /* minimum log level at which to send events immediately */
   int immediate_send_level;
   /* minimum log level at which to send events at all */
@@ -39,6 +43,8 @@ struct mondemand_client
   struct m_hash_table *messages;
   /* hashtable of stats */
   struct m_hash_table *stats;
+  /* hashtable of trace data */
+  struct m_hash_table *trace;
   /* array of transports */
   int num_transports;
   struct mondemand_transport **transports;
@@ -66,6 +72,7 @@ struct m_stat_message
 /* private forward declarations */
 int mondemand_dispatch_logs(struct mondemand_client *client);
 int mondemand_dispatch_stats(struct mondemand_client *client);
+int mondemand_dispatch_trace(struct mondemand_client *client);
 
 /* ======================================================================== */
 /* Public API functions                                                     */
@@ -88,17 +95,21 @@ mondemand_client_create(const char *program_identifier)
   if( client != NULL )
     {
       client->prog_id = strdup(program_identifier);
+      client->trace_id = NULL;
+      client->owner = NULL;
       client->immediate_send_level = M_LOG_CRIT;
       client->no_send_level = M_LOG_NOTICE;
       client->contexts = m_hash_table_create();
       client->messages = m_hash_table_create();
       client->stats = m_hash_table_create();
+      client->trace = m_hash_table_create();
       client->num_transports = 0;
       client->transports = NULL;
 
       /* if any of the memory allocation has failed, bail out */
       if( client->prog_id == NULL || client->contexts == NULL 
-          || client->messages == NULL || client->stats == NULL )
+          || client->messages == NULL || client->stats == NULL
+          || client->trace == NULL )
         {
           mondemand_client_destroy(client);
           return NULL;
@@ -129,9 +140,12 @@ mondemand_client_destroy (struct mondemand_client *client)
         }
 
       m_free(client->prog_id);
+      m_free(client->trace_id);
+      m_free(client->owner);
       m_hash_table_destroy(client->contexts);
       m_hash_table_destroy(client->messages);
       m_hash_table_destroy(client->stats);
+      m_hash_table_destroy(client->trace);
       m_free(client->transports);
       client->num_transports = 0;
       m_free(client);
@@ -165,16 +179,13 @@ mondemand_set_no_send_level(struct mondemand_client *client, const int level)
 
 /* returns the value for a given key */
 const char *
-mondemand_get_context(struct mondemand_client *client, const char *key)
+mondemand_get_context (struct mondemand_client *client, const char *key)
 {
   const char *ret = NULL;
 
-  if( client != NULL && key != NULL )
+  if (client != NULL)
     {
-      if( client->contexts != NULL )
-        {
-          ret = m_hash_table_get( client->contexts, key );
-        }
+      ret = m_hash_table_get (client->contexts, key);
     }
 
   return ret;
@@ -185,12 +196,9 @@ mondemand_get_context_keys(struct mondemand_client *client)
 {
   const char **ret = NULL;
 
-  if( client != NULL )
+  if (client != NULL)
     {
-      if( client->contexts != NULL ) 
-        {
-          ret = m_hash_table_keys( client->contexts );
-        }
+      ret = m_hash_table_keys (client->contexts);
     }
 
   return ret;
@@ -198,29 +206,29 @@ mondemand_get_context_keys(struct mondemand_client *client)
 
 /* sets a context, overwriting it if it is already set */
 int
-mondemand_set_context(struct mondemand_client *client,
-                      const char *key, const char *value)
+mondemand_set_context (struct mondemand_client *client,
+                       const char *key, const char *value)
 {
   char *k = NULL;
   char *v = NULL;
 
-  if( client != NULL && key != NULL && value != NULL )
+  if (client != NULL && key != NULL && value != NULL)
     {
-      if( client->contexts != NULL )
+      if (client->contexts != NULL)
         {
-          k = strdup(key);
-          v = strdup(value);
+          k = strdup (key);
+          v = strdup (value);
 
           /* if we can't allocate memory for the values, bail out */
-          if( k == NULL || v == NULL )
+          if (k == NULL || v == NULL)
             {
               return -3;
             }
 
-          if( m_hash_table_set( client->contexts, k, v ) != 0 )
+          if (m_hash_table_set (client->contexts, k, v) != 0)
             {
-              m_free(k);
-              m_free(v);
+              m_free (k);
+              m_free (v);
               return -3;
             }
         }
@@ -231,24 +239,98 @@ mondemand_set_context(struct mondemand_client *client,
 
 /* remove a context */
 void
-mondemand_remove_context(struct mondemand_client *client, const char *key)
+mondemand_remove_context (struct mondemand_client *client, const char *key)
 {
-  if( client != NULL && key != NULL )
+  if (client != NULL)
     {
-      if( client->contexts != NULL )
-        {
-          m_hash_table_remove( client->contexts, key );
-        }
+      m_hash_table_remove (client->contexts, key);
     }
 }
 
 /* remove all contexts */
 void
-mondemand_remove_all_contexts(struct mondemand_client *client)
+mondemand_remove_all_contexts (struct mondemand_client *client)
 {
   if( client != NULL )
     {
-      m_hash_table_remove_all( client->contexts );
+      m_hash_table_remove_all (client->contexts);
+    }
+}
+
+/* returns the value for a given key */
+const char *
+mondemand_get_trace (struct mondemand_client *client, const char *key)
+{
+  const char *ret = NULL;
+
+  if( client != NULL)
+    {
+      ret = m_hash_table_get (client->trace, key);
+    }
+
+  return ret;
+}
+
+const char **
+mondemand_get_trace_keys (struct mondemand_client *client)
+{
+  const char **ret = NULL;
+
+  if (client != NULL)
+    {
+      ret = m_hash_table_keys (client->trace);
+    }
+
+  return ret;
+}
+
+/* sets a trace item, overwriting it if it is already set */
+int
+mondemand_set_trace (struct mondemand_client *client,
+                     const char *key, const char *value)
+{
+  char *k = NULL;
+  char *v = NULL;
+
+  if (client != NULL && key != NULL && value != NULL)
+    {
+      k = strdup (key);
+      v = strdup (value);
+
+      /* if we can't allocate memory for the values, bail out */
+      if( k == NULL || v == NULL )
+        {
+          return -3;
+        }
+
+      if (m_hash_table_set (client->trace, k, v) != 0)
+        {
+          m_free (k);
+          m_free (v);
+          return -3;
+        }
+    }
+
+  return 0;
+}
+
+/* remove a trace item */
+void
+mondemand_remove_trace (struct mondemand_client *client, const char *key)
+{
+  if (client != NULL)
+    {
+      m_hash_table_remove (client->trace, key);
+    }
+}
+
+/* remove all trace items */
+void
+mondemand_remove_all_traces (struct mondemand_client *client)
+{
+  if (client != NULL)
+    {
+      m_hash_table_remove_all (client->trace);
     }
 }
 
@@ -366,8 +448,47 @@ mondemand_flush(struct mondemand_client *client)
 
   retval += mondemand_flush_logs(client);
   retval += mondemand_flush_stats(client);
+  retval += mondemand_flush_trace(client);
 
   return retval;
+}
+
+int
+mondemand_initialize_trace(struct mondemand_client *client,
+                           const char *trace_id,
+                           const char *owner)
+{
+  if( client != NULL )
+    {
+      client->trace_id = strdup (trace_id);
+      client->owner = strdup (owner);
+    }
+  return 0;
+}
+
+int
+mondemand_flush_trace(struct mondemand_client *client)
+{
+  if (client != NULL && client->trace_id != NULL && client->owner != NULL)
+    {
+      if (mondemand_dispatch_trace (client) != 0)
+        {
+          return -1;
+        }
+    }
+
+  return 0;
+}
+
+void
+mondemand_clear_trace (struct mondemand_client *client)
+{
+  if (client != NULL)
+    {
+      mondemand_remove_all_traces (client);
+      m_free (client->trace_id);
+      m_free (client->owner);
+    }
 }
 
 int mondemand_log_level_from_string (const char *level)
@@ -754,6 +875,60 @@ mondemand_dispatch_stats(struct mondemand_client *client)
           m_free (context_keys);
           m_free (messages);
           m_free (message_keys);
+        }
+    }
+
+  return retval;
+}
+
+int mondemand_dispatch_trace (struct mondemand_client *client)
+{
+  int retval = 0;
+  struct mondemand_transport *transport = NULL;
+  const char **trace_keys = NULL;
+  struct mondemand_trace *traces = NULL;
+  int i;
+
+  if( client != NULL )
+    {
+      if (client->trace != NULL)
+        {
+          /* fetch the keys to all the contexts */
+          trace_keys = m_hash_table_keys (client->trace);
+
+          traces = (struct mondemand_trace *)
+            m_try_malloc0 (sizeof (struct mondemand_trace) *
+                           client->trace->num);
+          for (i=0; i<client->trace->num; ++i)
+            {
+              /* copy the pointer to a const struct that the transport
+                 can copy from */
+              traces[i].key = trace_keys[i];
+              traces[i].value = (char *) m_hash_table_get (client->trace,
+                                                           trace_keys[i]);
+            }
+
+          /* iterate through each transport */
+          for (i=0; i<client->num_transports; ++i)
+            {
+              transport = client->transports[i];
+              if (transport != NULL)
+                {
+                  if (transport->trace_sender_function
+                        (client->prog_id,
+                         client->trace_id,
+                         client->owner,
+                         traces,
+                         client->trace->num,
+                         transport->userdata) != 0)
+                    {
+                      retval = -1;
+                    }
+                }
+            }
+
+          m_free (traces);
+          m_free (trace_keys);
         }
     }
 
