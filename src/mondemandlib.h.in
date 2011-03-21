@@ -208,6 +208,78 @@ int mondemand_log_level_from_string (const char *level);
  */
 MondemandStatType mondemand_stat_type_from_string (const char *type);
 
+/*!\fn int
+ *     mondemand_initialize_trace(struct mondemand_client *client,
+ *                                const char *trace_id,
+ *                                const char *owner)
+ * \brief Initialize required information for a trace message
+ */
+int
+mondemand_initialize_trace (struct mondemand_client *client,
+                            const char *trace_id,
+                            const char *owner);
+
+/*!\f void
+ *    mondemand_clear_trace (struct mondemand_client *client)
+ *
+ * \brief Clears all current trace information
+ */
+void
+mondemand_clear_trace (struct mondemand_client *client);
+
+/*!\fn const char *mondemand_get_trace(struct mondemand_client *client,
+ *                                       const char *key)
+ * \brief Returns the value for a given key.
+ */
+const char *
+mondemand_get_trace (struct mondemand_client *client, const char *key);
+
+/*!\fn const char **mondemand_get_trace_keys(
+ *         struct mondemand_client *client)
+ * \brief returns an array of keys.  The array is NULL terminated, and must
+ *        be freed by the caller when finished with it.
+ */
+const char **
+mondemand_get_trace_keys (struct mondemand_client *client);
+
+
+/*!\fn mondemand_set_trace(struct mondemand_client *client,
+ *                           const char *key, const char *value)
+ * \brief Sets a traceu key/value pair to the client, which is sent
+ *        out with a trace event.  If a value is already set, it overwrites it.
+ *        This method creates a copy of the key and value internally, so
+ *        they can be freed once set.
+ * \return zero on success, non-zero on failure
+ */
+int
+mondemand_set_trace (struct mondemand_client *client,
+                     const char *key, const char *value);
+
+
+/*!\fn mondemand_remove_trace(struct mondemand_client *client,
+ *                              const char *key);
+ * \brief Removes a trace key value pair from the client, and
+ *        frees that memory.
+ */
+void
+mondemand_remove_trace (struct mondemand_client *client, const char *key);
+
+
+/*!\fn mondemand_remove_all_traces(struct mondemand_client *client)
+ * \brief Method to remove all trace key/value pairs.  Frees all
+ *        related memory.
+ * \aram client a mondemand_client object pointer
+ */
+void
+mondemand_remove_all_traces (struct mondemand_client *client);
+
+/*!\fn int
+ *     mondemand_flush_trace(struct mondemand_client *client)
+ * \brief Flush a trace message to transports
+ */
+int
+mondemand_flush_trace(struct mondemand_client *client);
+
 /*=====================================================================*/
 /* Useful Macros                                                       */
 /*=====================================================================*/

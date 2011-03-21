@@ -1,3 +1,6 @@
+Version 3.0.0 (molinaro)
+  * Added trace messages
+
 Version 2.0.0 (molinaro)
   * Made package a framewerk package
   * added type to all pieces (this requires a recompile)
