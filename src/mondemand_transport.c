@@ -11,6 +11,7 @@
  *======================================================================*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "lwes.h"
 #include "m_mem.h"
@@ -20,6 +21,7 @@
 
 #define LWES_LOG_MSG "MonDemand::LogMsg"
 #define LWES_STATS_MSG "MonDemand::StatsMsg"
+#define LWES_TRACE_MSG "MonDemand::TraceMsg"
 
 /* private method forward declarations */
 int mondemand_transport_stderr_log_sender(
@@ -38,6 +40,15 @@ int mondemand_transport_stderr_stats_sender(
                       const int context_count,
                       void *userdata);
 
+int mondemand_transport_stderr_trace_sender(
+                      const char *program_identifier,
+                      const char *owner,
+                      const char *trace_id,
+                      const char *message,
+                      const struct mondemand_trace traces[],
+                      const int trace_count,
+                      void *userdata);
+
 int mondemand_transport_lwes_log_sender(
                       const char *program_identifier,
                       const struct mondemand_log_message messages[],
@@ -52,6 +63,15 @@ int mondemand_transport_lwes_stats_sender(
                       const int message_count,
                       const struct mondemand_context contexts[],
                       const int context_count,
+                      void *userdata);
+
+int mondemand_transport_lwes_trace_sender(
+                      const char *program_identifier,
+                      const char *owner,
+                      const char *trace_id,
+                      const char *message,
+                      const struct mondemand_trace traces[],
+                      const int trace_count,
                       void *userdata);
 
 /*=========================================================================*/
@@ -72,6 +92,8 @@ mondemand_transport_stderr_create(void)
         &mondemand_transport_stderr_log_sender;
       transport->stats_sender_function =
         &mondemand_transport_stderr_stats_sender;
+      transport->trace_sender_function =
+        &mondemand_transport_stderr_trace_sender;
       transport->destroy_function =
         &mondemand_transport_stderr_destroy;
       transport->userdata = NULL; /* not used */
@@ -122,6 +144,8 @@ struct mondemand_transport *mondemand_transport_lwes_create_with_ttl(
             &mondemand_transport_lwes_log_sender;
           transport->stats_sender_function =
             &mondemand_transport_lwes_stats_sender;
+          transport->trace_sender_function =
+            &mondemand_transport_lwes_trace_sender;
           transport->destroy_function =
             &mondemand_transport_lwes_destroy;
           transport->userdata =
@@ -239,6 +263,35 @@ mondemand_transport_stderr_stats_sender(
 
       fprintf( stderr, "\n" );
     } /* for(i=0; i<message_count; ++i) */
+
+  /* we don't need userdata so just satisfy -Wall */
+  (void) userdata;
+
+  return 0;
+}
+
+int
+mondemand_transport_stderr_trace_sender
+  (const char *program_identifier,
+   const char *owner,
+   const char *trace_id,
+   const char *message,
+   const struct mondemand_trace traces[],
+   const int trace_count,
+   void *userdata)
+{
+  int j;
+
+  fprintf (stderr, "[%s] %s:%s : %s", program_identifier, owner, trace_id,
+           message);
+  if (trace_count > 0)
+    {
+      for (j=0; j < trace_count ; ++j)
+        {
+          fprintf (stderr, " : %s=%s", traces[j].key, traces[j].value);
+        }
+    }
+  fprintf (stderr, "\n");
 
   /* we don't need userdata so just satisfy -Wall */
   (void) userdata;
@@ -365,5 +418,43 @@ mondemand_transport_lwes_stats_sender(
       lwes_event_destroy(event);
     }
 
+  return 0;
+}
+
+int
+mondemand_transport_lwes_trace_sender
+  (const char *program_identifier,
+   const char *owner,
+   const char *trace_id,
+   const char *message,
+   const struct mondemand_trace traces[],
+   const int trace_count,
+   void *userdata)
+{
+  struct lwes_emitter *emitter = userdata;
+  struct lwes_event *event = NULL;
+  char hostname[1024];
+  int j;
+
+  hostname[1023] = '\0';
+  gethostname (hostname, 1023);
+
+  event = lwes_event_create (NULL, (LWES_SHORT_STRING) LWES_TRACE_MSG);
+  lwes_event_set_STRING (event, "mondemand.prog_id", program_identifier);
+  lwes_event_set_STRING (event, "mondemand.trace_id", trace_id);
+  lwes_event_set_STRING (event, "mondemand.owner", owner);
+  lwes_event_set_STRING (event, "mondemand.src_host", hostname);
+  lwes_event_set_STRING (event, "mondemand.message", message);
+
+  if (trace_count > 0)
+    {
+      for (j=0; j < trace_count; ++j)
+        {
+          lwes_event_set_STRING (event, traces[j].key, traces[j].value);
+        }
+    }
+
+  lwes_emitter_emit(emitter, event);
+  lwes_event_destroy(event);
   return 0;
 }

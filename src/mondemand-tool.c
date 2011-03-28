@@ -1,4 +1,5 @@
 /*======================================================================*
+ * Copyright (c) 2009, Anthony Molinaro, All rights reserved.           *
  * Copyright (c) 2009, OpenX Inc. All rights reserved.                  *
  *                                                                      *
  * Licensed under the New BSD License (the "License"); you may not use  *
@@ -29,8 +30,9 @@ static const char help[] =
   "    -p <program identifier>"                                        "\n"
   "       Specify a string as a <program identifier>."                 "\n"
   ""                                                                   "\n"
-  "    -t <trace_id>"                                                  "\n"
-  "       Specify an unsigned integer trace id."                       "\n"
+  "    -T <owner_id>:<trace_id>:<message>"                             "\n"
+  "       For trace messages, the owner and trace ids along with a"    "\n"
+  "       message, all as strings, no colons in owner or trace ids."   "\n"
   ""                                                                   "\n"
   "  Transport Options:"                                               "\n"
   ""                                                                   "\n"
@@ -52,16 +54,18 @@ static const char help[] =
   "  Context Options:"                                                 "\n"
   ""                                                                   "\n"
   "    -c <key>:<value>"                                               "\n"
-  "      Add the context <key> with the value <value> to all mondemand""\n"
-  "      messages.  The key should not contain a ':'."                 "\n"
+  "      Add the context <key> with the value <value> to mondemand"    "\n"
+  "      log and stats messages.  The key should not contain a ':'."   "\n"
   ""                                                                   "\n"
   "    -c may be specified multiple times"                             "\n"
   ""                                                                   "\n"
   "  Log Options:"                                                     "\n"
   ""                                                                   "\n"
   "    -l <level>:<msg>"                                               "\n"
+  "    -l <trace_id>:<level>:<msg>"                                    "\n"
   "       where"                                                       "\n"
   ""                                                                   "\n"
+  "       trace_id - optional unsigned integer trace id"               "\n"
   "       level - the log level as one of the following strings"       "\n"
   "                 emerg    alert    crit"                            "\n"
   "                 error    warning  notice"                          "\n"
@@ -80,6 +84,16 @@ static const char help[] =
   "      sent via mondemand."                                          "\n"
   "      The name should not contain a ':'."                           "\n"
   "      Type should be either 'gauge' or 'counter'"                   "\n"
+  ""                                                                   "\n"
+  "  Trace Options:"                                                   "\n"
+  ""                                                                   "\n"
+  "    -t <key>:<value>"                                               "\n"
+  "      Add the trace <key> with the value <value> to mondemand"      "\n"
+  "      trace messages.  The key should not contain a ':'."           "\n"
+  "      All traces are aggregated and sent with the owner and"        "\n"
+  "      trace id from the -T option"                                  "\n"
+  ""                                                                   "\n"
+  "    -t may be specified multiple times"                             "\n"
   ""                                                                   "\n"
   "  Other Options:"                                                   "\n"
   ""                                                                   "\n"
@@ -202,7 +216,6 @@ handle_context_arg (const char *arg,
 static int
 handle_log_arg (const char *arg,
                 struct mondemand_client *client,
-                struct mondemand_trace_id trace_id,
                 int log_count)
 {
   const char *sep  = ":";
@@ -211,6 +224,7 @@ handle_log_arg (const char *arg,
   char *tofree;
   int level;
   int ret = -1;
+  struct mondemand_trace_id trace_id = MONDEMAND_NULL_TRACE_ID;
 
   tofree = buffer = strdup (arg);
   if (buffer == NULL)
@@ -222,26 +236,34 @@ handle_log_arg (const char *arg,
   level = mondemand_log_level_from_string (text_level);
   if (level < 0)
     {
-      fprintf (stderr, "ERROR: invalid level '%s'\n", text_level);
+      /* level didn't parse so assume its the 3 element form and get
+       * a trace id
+       */
+      trace_id = mondemand_trace_id (strtoul (text_level, NULL, 0));
+      text_level = strsep (&buffer, sep);
+      level = mondemand_log_level_from_string (text_level);
+      if (level < 0)
+        {
+          fprintf (stderr, "ERROR: invalid level '%s'\n", text_level);
+          goto END;
+        }
+    }
+  if (buffer != NULL && strcmp (buffer, "") != 0)
+    {
+      /* need to call the underlying implementation call because
+         I need to specify different 'line' numbers so messages
+         aren't counted as repeated */
+      mondemand_log_real(client, __FILE__, log_count,
+                         level, trace_id, "%s", buffer);
+
+      ret = 0;
     }
   else
     {
-      if (buffer != NULL && strcmp (buffer, "") != 0)
-        {
-          /* need to call the underlying implementation call because
-             I need to specify different 'line' numbers so messages
-             aren't counted as repeated */
-          mondemand_log_real(client, __FILE__, log_count,
-                             level, trace_id, "%s", buffer);
-
-          ret = 0;
-        }
-      else
-        {
-          fprintf (stderr, "WARNING: not sending empty log message\n");
-        }
+      fprintf (stderr, "WARNING: not sending empty log message\n");
     }
 
+END:
   free (tofree);
   return ret;
 }
@@ -296,7 +318,69 @@ handle_stat_arg (const char *arg,
 
   free (tofree);
   return ret;
+}
 
+static int
+initialize_trace_arg (const char *arg,
+                      struct mondemand_client *client)
+{
+  const char *sep  = ":";
+  char *buffer;
+  char *tofree;
+  char *owner;
+  char *id;
+
+  tofree = buffer = strdup (arg);
+
+  if (buffer == NULL)
+    {
+      return -1;
+    }
+
+  owner = strsep (&buffer, sep);
+  if (buffer != NULL && strcmp (buffer, "") != 0)
+    {
+      id = strsep (&buffer, sep);
+      if (buffer != NULL && strcmp (buffer, "") != 0)
+        {
+          assert (mondemand_initialize_trace (client, owner, id, buffer) == 0);
+        }
+      else
+        {
+          fprintf (stderr, "ERROR: message is required for trace\n");
+        }
+    }
+  else
+    {
+      fprintf (stderr, "ERROR: id is required for trace\n");
+    }
+
+  free (tofree);
+  return 0;
+}
+
+static int
+handle_trace_arg (const char *arg,
+                  struct mondemand_client *client)
+{
+  const char *sep  = ":";
+  char *trace_key;
+  char *buffer;
+  char *tofree;
+  int ret = -1;
+
+  tofree = buffer = strdup (arg);
+  if (buffer == NULL)
+    {
+      return ret;
+    }
+
+  trace_key = strsep (&buffer, sep);
+  mondemand_set_trace (client, trace_key, buffer);
+  ret = 0;
+
+  free (tofree);
+  return ret;
 }
 
 int main (int   argc,
@@ -306,8 +390,8 @@ int main (int   argc,
   int log_count = 0;
   struct mondemand_client *client = NULL;
   struct mondemand_transport *transport = NULL;
-  struct mondemand_trace_id trace_id = MONDEMAND_NULL_TRACE_ID;
-  const char *args = "p:t:o:l:c:s:h";
+  int trace_initialized = 0;
+  const char *args = "p:T:o:c:l:s:t:h";
   const char *prog_id = "mondemand-tool";
 
   /* turn off error messages, I'll handle them */
@@ -328,20 +412,18 @@ int main (int   argc,
             prog_id = optarg;
             break;
 
-          case 'h':
-            fprintf (stderr, "%s", help);
-            return 1;
-
-          case 't':
-            trace_id = mondemand_trace_id (strtoul (optarg, NULL, 0));
-            break;
-
           /* deal with these below */
+          case 'T':
           case 'o':
           case 'c':
           case 'l':
           case 's':
+          case 't':
             break;
+
+          case 'h':
+            fprintf (stderr, "%s", help);
+            return 1;
 
           default:
             fprintf (stderr,
@@ -358,7 +440,9 @@ int main (int   argc,
   mondemand_set_no_send_level (client, M_LOG_ALL);
   mondemand_set_immediate_send_level (client, M_LOG_EMERG);
 
-  /* reset the args list and go through them to get transports */
+  /* reset the args list and go through them to get transports and trace meta
+   * info
+   */
   optind = 1;
   while (1)
     {
@@ -371,18 +455,24 @@ int main (int   argc,
 
       switch (c)
         {
-          /* taken care of above */
           case 'p':
-          case 'h':
-          case 't':
-          case 'c':
-          case 'l':
-          case 's':
+            break;
+
+          case 'T':
+            assert (initialize_trace_arg (optarg, client) == 0);
+            trace_initialized = 1;
             break;
 
           case 'o':
             transport = handle_transport_arg (optarg);
             assert (mondemand_add_transport (client, transport) == 0);
+            break;
+
+          case 'c':
+          case 'l':
+          case 's':
+          case 't':
+          case 'h':
             break;
 
           default:
@@ -405,17 +495,19 @@ int main (int   argc,
 
       switch (c)
         {
-          /* taken care of above */
           case 'p':
-          case 'h':
-          case 't':
+          case 'T':
           case 'o':
-          case 'l':
-          case 's':
             break;
 
           case 'c':
             handle_context_arg (optarg, client);
+            break;
+
+          case 'l':
+          case 's':
+          case 't':
+          case 'h':
             break;
 
           default:
@@ -425,7 +517,7 @@ int main (int   argc,
         }
     }
 
-  /* finally get messages and statistics */
+  /* finally get messages, statistics, and traces */
   optind = 1;
   while (1)
     {
@@ -440,14 +532,13 @@ int main (int   argc,
         {
           /* taken care of above */
           case 'p':
-          case 'h':
-          case 't':
+          case 'T':
           case 'o':
           case 'c':
             break;
 
           case 'l':
-            if (handle_log_arg (optarg, client, trace_id, log_count) >= 0)
+            if (handle_log_arg (optarg, client, log_count) >= 0)
               {
                 log_count++;
               }
@@ -458,6 +549,21 @@ int main (int   argc,
               {
                 stat_count++;
               }
+            break;
+
+          case 't':
+            if (trace_initialized)
+              {
+                handle_trace_arg (optarg, client);
+              }
+            else
+              {
+                fprintf (stderr, "ERROR: can't specify '-t' without '-T'\n"
+                                 "       ignoring argument\n");
+              }
+            break;
+
+          case 'h':
             break;
 
           default:

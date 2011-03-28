@@ -24,6 +24,12 @@ struct mondemand_context
   const char *value;
 };
 
+struct mondemand_trace
+{
+  const char *key;
+  const char *value;
+};
+
 /* represents a single log message */
 struct mondemand_log_message
 {
@@ -78,6 +84,16 @@ typedef int (*mondemand_transport_stats_sender_t)
                const int context_count,
                void *);
 
+/* method called when trying to log traces */
+typedef int (*mondemand_transport_trace_sender_t)
+              (const char *program_identifier,
+               const char *owner,
+               const char *trace_id,
+               const char *message,
+               const struct mondemand_trace traces[],
+               const int trace_count,
+               void *);
+
 typedef void (*mondemand_transport_destroy_t)
                (struct mondemand_transport *transport);
 
@@ -86,6 +102,7 @@ struct mondemand_transport
 {
   mondemand_transport_log_sender_t   log_sender_function;
   mondemand_transport_stats_sender_t stats_sender_function;
+  mondemand_transport_trace_sender_t trace_sender_function;
   mondemand_transport_destroy_t      destroy_function;
   void *userdata;
 };
