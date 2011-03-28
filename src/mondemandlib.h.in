@@ -216,8 +216,9 @@ MondemandStatType mondemand_stat_type_from_string (const char *type);
  */
 int
 mondemand_initialize_trace (struct mondemand_client *client,
+                            const char *owner,
                             const char *trace_id,
-                            const char *owner);
+                            const char *message);
 
 /*!\f void
  *    mondemand_clear_trace (struct mondemand_client *client)

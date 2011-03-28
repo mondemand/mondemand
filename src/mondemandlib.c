@@ -33,6 +33,8 @@ struct mondemand_client
   char *trace_id;
   /* owner for trace messages only */
   char *owner;
+  /* message for trace messages only */
+  char *trace_message;
   /* minimum log level at which to send events immediately */
   int immediate_send_level;
   /* minimum log level at which to send events at all */
@@ -455,13 +457,15 @@ mondemand_flush(struct mondemand_client *client)
 
 int
 mondemand_initialize_trace(struct mondemand_client *client,
+                           const char *owner,
                            const char *trace_id,
-                           const char *owner)
+                           const char *message)
 {
   if( client != NULL )
     {
       client->trace_id = strdup (trace_id);
       client->owner = strdup (owner);
+      client->trace_message = strdup (message);
     }
   return 0;
 }
@@ -916,8 +920,9 @@ int mondemand_dispatch_trace (struct mondemand_client *client)
                 {
                   if (transport->trace_sender_function
                         (client->prog_id,
-                         client->trace_id,
                          client->owner,
+                         client->trace_id,
+                         client->trace_message,
                          traces,
                          client->trace->num,
                          transport->userdata) != 0)

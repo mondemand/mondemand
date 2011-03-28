@@ -42,8 +42,9 @@ int mondemand_transport_stderr_stats_sender(
 
 int mondemand_transport_stderr_trace_sender(
                       const char *program_identifier,
-                      const char *trace_id,
                       const char *owner,
+                      const char *trace_id,
+                      const char *message,
                       const struct mondemand_trace traces[],
                       const int trace_count,
                       void *userdata);
@@ -66,8 +67,9 @@ int mondemand_transport_lwes_stats_sender(
 
 int mondemand_transport_lwes_trace_sender(
                       const char *program_identifier,
-                      const char *trace_id,
                       const char *owner,
+                      const char *trace_id,
+                      const char *message,
                       const struct mondemand_trace traces[],
                       const int trace_count,
                       void *userdata);
@@ -268,17 +270,20 @@ mondemand_transport_stderr_stats_sender(
   return 0;
 }
 
-int mondemand_transport_stderr_trace_sender(
-                      const char *program_identifier,
-                      const char *trace_id,
-                      const char *owner,
-                      const struct mondemand_trace traces[],
-                      const int trace_count,
-                      void *userdata)
+int
+mondemand_transport_stderr_trace_sender
+  (const char *program_identifier,
+   const char *owner,
+   const char *trace_id,
+   const char *message,
+   const struct mondemand_trace traces[],
+   const int trace_count,
+   void *userdata)
 {
   int j;
 
-  fprintf (stderr, "[%s] %s:%s", program_identifier, owner, trace_id);
+  fprintf (stderr, "[%s] %s:%s : %s", program_identifier, owner, trace_id,
+           message);
   if (trace_count > 0)
     {
       for (j=0; j < trace_count ; ++j)
@@ -419,8 +424,9 @@ mondemand_transport_lwes_stats_sender(
 int
 mondemand_transport_lwes_trace_sender
   (const char *program_identifier,
-   const char *trace_id,
    const char *owner,
+   const char *trace_id,
+   const char *message,
    const struct mondemand_trace traces[],
    const int trace_count,
    void *userdata)
@@ -438,6 +444,7 @@ mondemand_transport_lwes_trace_sender
   lwes_event_set_STRING (event, "mondemand.trace_id", trace_id);
   lwes_event_set_STRING (event, "mondemand.owner", owner);
   lwes_event_set_STRING (event, "mondemand.src_host", hostname);
+  lwes_event_set_STRING (event, "mondemand.message", message);
 
   if (trace_count > 0)
     {

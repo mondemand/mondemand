@@ -30,8 +30,9 @@ static const char help[] =
   "    -p <program identifier>"                                        "\n"
   "       Specify a string as a <program identifier>."                 "\n"
   ""                                                                   "\n"
-  "    -T <owner_id>:<trace_id>"                                       "\n"
-  "       For trace messages, the owner and trace ids, both as strings""\n"
+  "    -T <owner_id>:<trace_id>:<message>"                             "\n"
+  "       For trace messages, the owner and trace ids along with a"    "\n"
+  "       message, all as strings, no colons in owner or trace ids."   "\n"
   ""                                                                   "\n"
   "  Transport Options:"                                               "\n"
   ""                                                                   "\n"
@@ -327,6 +328,7 @@ initialize_trace_arg (const char *arg,
   char *buffer;
   char *tofree;
   char *owner;
+  char *id;
 
   tofree = buffer = strdup (arg);
 
@@ -336,7 +338,22 @@ initialize_trace_arg (const char *arg,
     }
 
   owner = strsep (&buffer, sep);
-  assert (mondemand_initialize_trace (client, buffer, owner) == 0);
+  if (buffer != NULL && strcmp (buffer, "") != 0)
+    {
+      id = strsep (&buffer, sep);
+      if (buffer != NULL && strcmp (buffer, "") != 0)
+        {
+          assert (mondemand_initialize_trace (client, owner, id, buffer) == 0);
+        }
+      else
+        {
+          fprintf (stderr, "ERROR: message is required for trace\n");
+        }
+    }
+  else
+    {
+      fprintf (stderr, "ERROR: id is required for trace\n");
+    }
 
   free (tofree);
   return 0;

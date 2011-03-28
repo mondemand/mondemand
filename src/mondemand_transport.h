@@ -87,8 +87,9 @@ typedef int (*mondemand_transport_stats_sender_t)
 /* method called when trying to log traces */
 typedef int (*mondemand_transport_trace_sender_t)
               (const char *program_identifier,
-               const char *trace_id,
                const char *owner,
+               const char *trace_id,
+               const char *message,
                const struct mondemand_trace traces[],
                const int trace_count,
                void *);
