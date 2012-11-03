@@ -1,3 +1,6 @@
+Version 4.0.1 (molinaro)
+  * fixed some memory leaks with traces
+
 Version 4.0.0 (molinaro)
   * include a message in traces
 
