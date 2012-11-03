@@ -29,10 +29,10 @@ struct m_hash_iterator
 
 
 /* forward declaration of private functions */
-int m_hash_function(const char *key);
-void m_hash_free(void *value);
-struct m_hash_node *m_hash_table_get_node(struct m_hash_table *hash_table,
-                                          const char *key);
+int m_hash_function (const char *key);
+void m_hash_free (void *value);
+struct m_hash_node *m_hash_table_get_node (struct m_hash_table *hash_table,
+                                           const char *key);
 
 /* ======================================================================== */
 /* Public API functions                                                     */
@@ -40,23 +40,23 @@ struct m_hash_node *m_hash_table_get_node(struct m_hash_table *hash_table,
 
 /* creates the hash table */
 struct m_hash_table *
-m_hash_table_create(void)
+m_hash_table_create (void)
 {
   int i = 0;
   struct m_hash_table *hash_table = NULL;
 
-  hash_table = (struct m_hash_table *) 
-    m_try_malloc0(sizeof(struct m_hash_table)); 
+  hash_table = (struct m_hash_table *)
+    m_try_malloc0 (sizeof (struct m_hash_table));
 
   if( hash_table != NULL )
     {
       hash_table->size = DEFAULT_SIZE;
       hash_table->num = 0;
-      hash_table->nodes = 
-        (void **) m_try_malloc0( sizeof(void *) * hash_table->size );
-      if( hash_table->nodes != NULL )
+      hash_table->nodes =
+        (void **) m_try_malloc0 (sizeof (void *) * hash_table->size );
+      if (hash_table->nodes != NULL)
         {
-          for( i=0; i < hash_table->size; ++i )
+          for (i=0; i < hash_table->size; ++i)
             {
               hash_table->nodes[i] = NULL;
             }
@@ -64,7 +64,7 @@ m_hash_table_create(void)
       else
         {
           /* we couldn't allocate the bins, free and return NULL */
-          m_free(hash_table);
+          m_free (hash_table);
           return NULL;
         }
     }
@@ -74,13 +74,13 @@ m_hash_table_create(void)
 
 /* destroys the hash table */
 void
-m_hash_table_destroy(struct m_hash_table *hash_table)
+m_hash_table_destroy (struct m_hash_table *hash_table)
 {
-  if( hash_table != NULL )
+  if (hash_table != NULL)
   {
-    m_hash_table_remove_all(hash_table);
-    m_free(hash_table->nodes);
-    m_free(hash_table);
+    m_hash_table_remove_all (hash_table);
+    m_free (hash_table->nodes);
+    m_free (hash_table);
   }
 }
 

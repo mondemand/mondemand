@@ -99,6 +99,7 @@ mondemand_client_create(const char *program_identifier)
       client->prog_id = strdup(program_identifier);
       client->trace_id = NULL;
       client->owner = NULL;
+      client->trace_message = NULL;
       client->immediate_send_level = M_LOG_CRIT;
       client->no_send_level = M_LOG_NOTICE;
       client->contexts = m_hash_table_create();
@@ -144,6 +145,7 @@ mondemand_client_destroy (struct mondemand_client *client)
       m_free(client->prog_id);
       m_free(client->trace_id);
       m_free(client->owner);
+      m_free(client->trace_message);
       m_hash_table_destroy(client->contexts);
       m_hash_table_destroy(client->messages);
       m_hash_table_destroy(client->stats);
@@ -380,18 +382,18 @@ mondemand_level_is_enabled(struct mondemand_client *client,
 
 /* flush the logs to the transports */
 int
-mondemand_flush_logs(struct mondemand_client *client)
+mondemand_flush_logs (struct mondemand_client *client)
 {
   int retval = 0;
 
   if( client != NULL )
     {
-      if( (retval = mondemand_dispatch_logs(client)) != 0 )
+      if( (retval = mondemand_dispatch_logs (client)) != 0 )
         {
           return -1;
         }
 
-      m_hash_table_remove_all( client->messages );
+      m_hash_table_remove_all ( client->messages );
     }
 
   return 0;
@@ -399,11 +401,11 @@ mondemand_flush_logs(struct mondemand_client *client)
 
 /* flush the stats to the transports */
 int
-mondemand_flush_stats(struct mondemand_client *client)
+mondemand_flush_stats (struct mondemand_client *client)
 {
   if( client != NULL )
     {
-      if( mondemand_dispatch_stats(client) != 0 )
+      if( mondemand_dispatch_stats (client) != 0 )
         {
           return -1;
         }
@@ -429,13 +431,13 @@ mondemand_reset_stats (struct mondemand_client *client)
             {
               stat =
                 (struct m_stat_message *)
-                  m_hash_table_get(client->stats, keys[i]);
+                  m_hash_table_get (client->stats, keys[i]);
               if (stat != NULL)
                 {
                   stat->value = 0;
                 }
             }
-          m_free(keys);
+          m_free (keys);
         }
     }
 
@@ -444,23 +446,28 @@ mondemand_reset_stats (struct mondemand_client *client)
 
 /* flush everything */
 int
-mondemand_flush(struct mondemand_client *client)
+mondemand_flush (struct mondemand_client *client)
 {
   int retval = 0;
 
-  retval += mondemand_flush_logs(client);
-  retval += mondemand_flush_stats(client);
-  retval += mondemand_flush_trace(client);
+  retval += mondemand_flush_logs (client);
+  retval += mondemand_flush_stats (client);
+  retval += mondemand_flush_trace (client);
 
   return retval;
 }
 
 int
-mondemand_initialize_trace(struct mondemand_client *client,
-                           const char *owner,
-                           const char *trace_id,
-                           const char *message)
+mondemand_initialize_trace (struct mondemand_client *client,
+                            const char *owner,
+                            const char *trace_id,
+                            const char *message)
 {
+  mondemand_remove_all_traces (client);
+  m_free (client->trace_id);
+  m_free (client->owner);
+  m_free (client->trace_message);
+
   if( client != NULL )
     {
       client->trace_id = strdup (trace_id);
@@ -471,7 +478,7 @@ mondemand_initialize_trace(struct mondemand_client *client,
 }
 
 int
-mondemand_flush_trace(struct mondemand_client *client)
+mondemand_flush_trace (struct mondemand_client *client)
 {
   if (client != NULL && client->trace_id != NULL && client->owner != NULL)
     {
@@ -492,6 +499,10 @@ mondemand_clear_trace (struct mondemand_client *client)
       mondemand_remove_all_traces (client);
       m_free (client->trace_id);
       m_free (client->owner);
+      m_free (client->trace_message);
+      client->trace_id = NULL;
+      client->owner = NULL;
+      client->trace_message = NULL;
     }
 }
 

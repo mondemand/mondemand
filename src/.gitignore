@@ -1,0 +1,10 @@
+Makefile.am
+.deps
+.libs
+config.h
+config.h.in
+libmondemand.la
+mondemand-tool
+mondemand.h
+mondemandlib.h
+stamp-h1

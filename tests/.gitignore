@@ -1,0 +1,8 @@
+Makefile.am
+test-wrapper.sh.in
+.deps
+test-wrapper.sh
+testhash
+testmem
+testmondemandlib
+testmultitrace

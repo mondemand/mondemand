@@ -48,6 +48,9 @@ void *m_try_realloc(void *ptr, size_t size)
 void
 m_free(void *ptr)
 {
-  free(ptr);
+  if (ptr != NULL)
+    {
+      free(ptr);
+    }
 }
 
