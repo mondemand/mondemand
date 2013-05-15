@@ -1,10 +1,10 @@
-config.h
-config.h.in
 .deps
-libmondemand.la
 .libs
 Makefile.am
+config.h
+config.h.in
+libmondemand.la
+mondemand-tool
 mondemand.h
 mondemandlib.h
-mondemand-tool
 stamp-h1
