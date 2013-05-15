@@ -112,12 +112,19 @@ static struct mondemand_transport *
 handle_transport_arg (const char *arg)
 {
   const char *sep  = ":";
+  const char *empty = "";
   char *word;
-  char *words[MAX_WORDS];
+  const char *words[MAX_WORDS];
   char *buffer;
   char *tofree;
   int count = 0;
   struct mondemand_transport *transport = NULL;
+  int i;
+
+  for (i = 0 ; i < MAX_WORDS; i++)
+    {
+      words[i] = empty;
+    }
 
   tofree = buffer = strdup (arg);
   if (buffer == NULL)
