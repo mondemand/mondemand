@@ -1,3 +1,7 @@
+Version 4.1.0 (molinaro)
+  * mondemand-tool now defaults to a ttl of 3 and allows for overriding
+    via command line
+
 Version 4.0.2 (molinaro)
   * fixed a minor issue with newer GCC on Centos 6
 

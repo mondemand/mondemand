@@ -36,13 +36,14 @@ static const char help[] =
   ""                                                                   "\n"
   "  Transport Options:"                                               "\n"
   ""                                                                   "\n"
-  "    -o lwes:<iface>:<ip>:<port> | stderr"                           "\n"
+  "    -o lwes:<iface>:<ip>:<port> | lwes:<iface>:<ip>:<port>:<ttl> | stderr""\n"
   "       Specify a place to send messages."                           "\n"
   "         lwes - send message via lwes"                              "\n"
   "           iface - ethernet interface to send via, defaults to"     "\n"
   "                   system configured default interface."            "\n"
   "           ip    - ip address to send datagrams to."                "\n"
   "           port  - port to send datagrams to."                      "\n"
+  "           ttl   - ttl for multicast datagrams"                     "\n"
   ""                                                                   "\n"
   "           if ip is a multicast ip, then datagrams are sent via"    "\n"
   "           multicast, otherwise they are sent via UDP."             "\n"
@@ -147,16 +148,18 @@ handle_transport_arg (const char *arg)
     {
       if (strcmp (words[0], "lwes") == 0)
         {
-          if (count != 4)
+          if (count < 4 || count > 5)
             {
-              fprintf (stderr, "ERROR: lwes transport requires 3 parts\n");
+              fprintf (stderr, "ERROR: lwes transport requires 3 or 4 parts\n");
               fprintf (stderr, "       lwes:<iface>:<ip>:<port>\n");
+              fprintf (stderr, "       lwes:<iface>:<ip>:<port>:<ttl>\n");
             }
           else
             {
               const char *iface = NULL;
               const char *ip = NULL;
               int port = -1;
+              int ttl = 3;
               if (strcmp (words[1], "") != 0)
                 {
                   iface = words[1];
@@ -167,9 +170,19 @@ handle_transport_arg (const char *arg)
                   if (strcmp (words[3], "") != 0)
                     {
                       port = atoi (words[3]);
+                      if (strcmp (words[4], "") != 0)
+                        {
+                          ttl = atoi (words[4]);
+                          if (ttl < 0 || ttl > 32)
+                            {
+                              fprintf (stderr, "WARNING: ttl must be between 0 "
+                                               "and 32, defaulting to 3\n");
+                              ttl = 3;
+                            }
+                        }
                       transport =
-                        mondemand_transport_lwes_create (ip, port, iface,
-                                                         0, 60);
+                        mondemand_transport_lwes_create_with_ttl
+                          (ip, port, iface, 0, 60, ttl);
                     }
                   else
                     {

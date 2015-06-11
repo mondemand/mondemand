@@ -115,7 +115,7 @@ struct mondemand_transport *mondemand_transport_lwes_create(
 {
   return mondemand_transport_lwes_create_with_ttl(address, port,
                                                   interface, emit_heartbeat,
-                                                  heartbeat_frequency, 1);
+                                                  heartbeat_frequency, 3);
 }
 
 struct mondemand_transport *mondemand_transport_lwes_create_with_ttl(
