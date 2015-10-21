@@ -58,6 +58,7 @@ main(void)
   /* this should work normally */
   hash_table = m_hash_table_create();
   assert( hash_table != NULL );
+  assert( m_hash_table_num (hash_table) == 0);
   m_hash_table_destroy(hash_table);
 
   /* fail the bucket allocation */
@@ -78,6 +79,7 @@ main(void)
   key = strdup("key1");
   value = strdup("value1");
   m_hash_table_set(hash_table, key, value);
+  assert( m_hash_table_num (hash_table) == 1);
 
   /* make sure we can get it back */
   test_value = m_hash_table_get(hash_table, key);
@@ -91,6 +93,7 @@ main(void)
   key = strdup("key1");
   value = strdup("newvalue1");
   m_hash_table_set(hash_table, key, value);
+  assert( m_hash_table_num (hash_table) == 1);
 
   /* create and remove a grip of entries to check for leaks */
   for( i=0; i<1000; ++i )
@@ -100,12 +103,14 @@ main(void)
     value = strdup("a grip of data is a lot");
     m_hash_table_set(hash_table, key, value);
   }
+  assert( m_hash_table_num (hash_table) == 1001);
 
   for( i=0; i<1000; ++i )
   {
     sprintf(buf, "newkey%d", i);
     m_hash_table_remove(hash_table, buf);
   }
+  assert( m_hash_table_num (hash_table) == 1);
 
   /* do it again but use remove all */
   for( i=0; i<1000; ++i )
@@ -115,6 +120,7 @@ main(void)
     value = strdup("a grip of data is a lot");
     m_hash_table_set(hash_table, key, value);
   }
+  assert( m_hash_table_num (hash_table) == 1001);
 
   /* set some values but have malloc fail */
   key = strdup("test1");
@@ -125,9 +131,11 @@ main(void)
   malloc_fail_at = -1;
   free(key);
   free(value);
+  assert( m_hash_table_num (hash_table) == 1001);
 
   /* this should destroy all 1000 keys/values */ 
   m_hash_table_remove_all(hash_table);
+  assert( m_hash_table_num (hash_table) == 0);
 
   /* remove more anyways to see what happens */
   m_hash_table_remove(hash_table, "i_dont_exist");
@@ -141,9 +149,10 @@ main(void)
     value = strdup("a grip of data is a lot");
     m_hash_table_set(hash_table, key, value);
   }
+  assert( m_hash_table_num (hash_table) == 1000);
 
   /* get a list of the keys */
-  m_hash_table_keys(NULL);
+  assert (m_hash_table_keys(NULL) == NULL);
   keys = m_hash_table_keys(hash_table);
   for( i=0; keys[i] != NULL; ++i )
   {
@@ -152,6 +161,7 @@ main(void)
   }
   assert( i == 1000 );
   free(keys);
+  assert( m_hash_table_num (hash_table) == 1000);
 
   /* start a little higher so the bucket search finds nothing */
   for( i=1010; i>=0; --i )
@@ -159,11 +169,15 @@ main(void)
     sprintf(buf, "newkey%d", i);
     m_hash_table_remove(hash_table, buf);
   }
+  assert( m_hash_table_num (hash_table) == 0);
 
   assert( m_hash_function(NULL) == 0 );
   assert( m_hash_table_get_node(NULL, NULL) == NULL );
 
   m_hash_table_destroy(hash_table);
+
+  /* for coverage */
+  assert (m_hash_table_set (NULL, NULL, NULL) == -4);
 
   return 0;
 }

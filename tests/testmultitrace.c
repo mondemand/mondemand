@@ -26,6 +26,12 @@ main(void)
 
   assert (mondemand_initialize_trace (client, "owner", "id", "message 1") == 0);
   assert (mondemand_set_trace (client, "foo1", "bar1") == 0);
+  assert (strcmp (mondemand_get_trace (client, "foo1"), "bar1") == 0);
+  {
+    const char **keys = mondemand_get_trace_keys (client);
+    assert (strcmp (*keys, "foo1") == 0);
+    free (keys);
+  }
   assert (mondemand_flush_trace (client) == 0);
   mondemand_clear_trace (client);
 

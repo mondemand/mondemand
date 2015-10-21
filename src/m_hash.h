@@ -86,4 +86,10 @@ void m_hash_table_remove_all(struct m_hash_table *hash_table);
 const char **
 m_hash_table_keys(struct m_hash_table *hash_table);
 
+/*!\fn int m_hash_num (struct m_hash_table *hash_table)
+ * \brief return the number of entries currently in the table
+ */
+int
+m_hash_table_num (struct m_hash_table *hash_table);
+
 #endif

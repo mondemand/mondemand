@@ -24,7 +24,6 @@
 
 /* wrap malloc to cause memory problems */
 static int malloc_fail = 0;
-static int realloc_fail = 0;
 
 static void *my_malloc0(size_t size)
 {
@@ -36,6 +35,7 @@ static void *my_malloc0(size_t size)
   return ret;
 }
 
+static int realloc_fail = 0;
 static void *my_realloc(void *ptr, size_t size)
 {
   void *ret = NULL;
@@ -48,10 +48,13 @@ static void *my_realloc(void *ptr, size_t size)
 
 /* wrap strdup to cause memory problems */
 static int strdup_fail = 0;
+static int strdup_count = 0;
+static int strdup_fail_at = -1;
 static char *my_strdup(const char *s)
 {
   void *ret = NULL;
-  if( strdup_fail == 0 )
+  strdup_count++;
+  if( strdup_fail == 0 && strdup_fail_at != strdup_count )
   {
     ret = strdup(s);
   }
@@ -87,6 +90,9 @@ my_m_hash_table_set(struct m_hash_table *hash_table, char *key, void *value)
 
 static int fail_log_callback = 0;
 static int fail_stats_callback = 0;
+static int fail_trace_callback = 0;
+static int fail_perf_callback = 0;
+static int fail_annotation_callback = 0;
 
 static int
 log_sender_callback(const char *prog_id,
@@ -133,7 +139,7 @@ stats_sender_callback(const char *prog_id,
   {
     (void) stats[i];
   }
- 
+
   for(i=0; i<context_count; ++i)
   {
     (void) contexts[i];
@@ -150,10 +156,359 @@ stats_sender_callback(const char *prog_id,
   return 0;
 }
 
+static int
+trace_sender_callback (const char *program_identifier,
+                       const char *owner,
+                       const char *trace_id,
+                       const char *message,
+                       const struct mondemand_trace traces[],
+                       const int trace_count,
+                       void *userdata)
+{
+  int i=0;
+
+  (void) userdata;
+  (void) program_identifier;
+  (void) owner;
+  (void) trace_id;
+  (void) message;
+  for(i=0; i<trace_count; ++i)
+  {
+    (void) traces[i];
+  }
+
+  if(fail_trace_callback != 0)
+  {
+    return -1;
+  }
+
+  return 0;
+}
+static int perf_sender_callback (
+               const char *id,
+               const char *caller_label,
+               const struct mondemand_timing timings[],
+               const int timings_count,
+               const struct mondemand_context contexts[],
+               const int context_count,
+               void *userdata)
+{
+  int i=0;
+
+  for(i=0; i<timings_count; ++i)
+  {
+    (void) timings[i];
+  }
+
+  for (i=0; i<context_count; ++i)
+  {
+    (void) contexts[i];
+  }
+
+  (void) id;
+  (void) caller_label;
+  (void) userdata;
+
+  if (fail_perf_callback!= 0)
+  {
+    return -1;
+  }
+
+  return 0;
+}
+
+static int annotation_sender_callback(
+               const char *id,
+               const long long int timestamp,
+               const char *description,
+               const char *text,
+               const char *tags[],
+               const int tag_count,
+               const struct mondemand_context contexts[],
+               const int context_count,
+               void *userdata)
+{
+  int i=0;
+
+  (void) id;
+  (void) timestamp;
+  (void) description;
+  (void) text;
+  for (i=0; i<tag_count; ++i)
+    {
+      (void) tags[i];
+    }
+  for (i=0; i<context_count; ++i)
+    {
+      (void) contexts[i];
+    }
+  (void) userdata;
+
+  if (fail_annotation_callback!= 0)
+  {
+    return -1;
+  }
+
+  return 0;
+}
+
 static void
 destroy_callback (struct mondemand_transport *transport)
 {
   free(transport);
+}
+
+static struct mondemand_transport *
+make_test_transport (void)
+{
+  struct mondemand_transport *transport = NULL;
+  transport = (struct mondemand_transport *) 
+                malloc(sizeof(struct mondemand_transport));
+
+  transport->log_sender_function = &log_sender_callback;
+  transport->stats_sender_function = &stats_sender_callback;
+  transport->trace_sender_function = &trace_sender_callback;
+  transport->perf_sender_function = &perf_sender_callback;
+  transport->annotation_sender_function = &annotation_sender_callback;
+  transport->destroy_function = &destroy_callback;
+  transport->userdata = NULL;
+
+  return transport;
+}
+
+
+static void trace_test (void)
+{
+  struct mondemand_client *client = NULL;
+  struct mondemand_transport *transport = NULL;
+  struct mondemand_trace_id trace_id;
+
+  client = mondemand_client_create ("test1234");
+  assert ( client != NULL );
+  transport = mondemand_transport_lwes_create ("127.0.0.1", 20502, NULL, 0, 60);
+  assert (transport != NULL );
+  assert (mondemand_add_transport (client, transport) == 0);
+
+  trace_id = mondemand_trace_id (12345);
+
+  assert (mondemand_initialize_trace (client, "owner", "id", "message 1") == 0);
+  assert (mondemand_set_trace (client, "foo1", "bar1") == 0);
+  strdup_count = 0; strdup_fail_at=1;
+  assert (mondemand_set_trace (client, "foo1", "bar1") == -3);
+  strdup_count = 0; strdup_fail_at=2;
+  assert (mondemand_set_trace (client, "foo1", "bar1") == -3);
+  strdup_count = 0; strdup_fail_at=-1;
+  m_hash_fail = 1;
+  assert (mondemand_set_trace (client, "foo1", "bar1") == -3);
+  m_hash_fail = 0;
+  assert (strcmp (mondemand_get_trace (client, "foo1"), "bar1") == 0);
+  {
+    const char **keys = mondemand_get_trace_keys (client);
+    assert (strcmp (*keys, "foo1") == 0);
+    free (keys);
+  }
+  assert (mondemand_flush_trace (client) == 0);
+  mondemand_clear_trace (client);
+
+  assert (mondemand_initialize_trace (client, "owner", "id", "message 2") == 0);
+  assert (mondemand_set_trace (client, "foo2", "bar2") == 0);
+  assert (mondemand_flush_trace (client) == 0);
+
+  assert (mondemand_initialize_trace (client, "owner", "id", "message 3") == 0);
+  assert (mondemand_set_trace (client, "foo3", "bar3") == 0);
+  assert (mondemand_flush_trace (client) == 0);
+  mondemand_clear_trace (client);
+
+  assert (mondemand_initialize_trace (client, "owner", "id", "message 4") == 0);
+  assert (mondemand_set_trace (client, "foo1", "bar1") == 0);
+  assert (mondemand_set_trace (client, "foo2", "bar2") == 0);
+  mondemand_remove_trace (client, "foo1");
+  assert (mondemand_flush_trace (client) == 0);
+
+  mondemand_client_destroy (client);
+}
+
+static void perf_test (void)
+{
+  struct mondemand_client *client = NULL;
+  struct mondemand_transport *test_transport = NULL;
+  struct mondemand_transport *lwes_transport = NULL;
+  struct mondemand_transport *stderr_transport = NULL;
+
+
+  client = mondemand_client_create ("test1234");
+  assert ( client != NULL );
+  lwes_transport = mondemand_transport_lwes_create ("127.0.0.1", 20502, NULL, 0, 60);
+  assert (lwes_transport != NULL );
+  assert (mondemand_add_transport (client, lwes_transport) == 0);
+  stderr_transport = mondemand_transport_stderr_create();
+  assert (mondemand_add_transport(client, stderr_transport) == 0);
+  test_transport = make_test_transport ();
+  assert (mondemand_add_transport(client, test_transport) == 0);
+
+  /* set a context */
+  assert (mondemand_set_context(client, "context-key-1", "context-value-1") == 0);
+
+  assert (mondemand_initialize_performance_trace
+           (client, "id", "caller_label") == 0);
+
+  assert (mondemand_add_performance_trace_timing (client, "step1",
+                                                  1445285994, 1445285996) == 0);
+  assert (mondemand_add_performance_trace_timing (client, "step2",
+                                                  1445285997, 1445286011) == 0);
+
+  /* various failure cases */
+  realloc_fail = 1;
+  assert (mondemand_add_performance_trace_timing (client, "step3",
+                                                  1445285997, 1445286011) == -3);
+  realloc_fail = 0;
+
+  assert (mondemand_add_performance_trace_timing
+            (client, NULL, 1445285997, 1445286011) == -2);
+  assert (mondemand_add_performance_trace_timing
+            (client, "step4", -1, 1445286011) == -2);
+  assert (mondemand_add_performance_trace_timing
+            (client, "step4", 1445286011, -1) == -2);
+
+  /* first fail to send */
+  fail_perf_callback = 1;
+  assert (mondemand_flush_performance_trace (client) == -1);
+  fail_perf_callback = 0;
+  /* then succeed */
+  assert (mondemand_flush_performance_trace (client) == 0);
+
+  /* finally clear and destroy */
+  mondemand_clear_performance_trace (client);
+  mondemand_client_destroy (client);
+}
+
+static void annotation_test (void)
+{
+  struct mondemand_client *client = NULL;
+  struct mondemand_transport *test_transport = NULL;
+  struct mondemand_transport *lwes_transport = NULL;
+  struct mondemand_transport *stderr_transport = NULL;
+
+  const char *tags[] = { "tag1", "tag2" };
+  int tag_count = sizeof (tags) / sizeof (const char *);
+
+
+  client = mondemand_client_create ("test1234");
+  assert ( client != NULL );
+  lwes_transport = mondemand_transport_lwes_create ("127.0.0.1", 20502, NULL, 0, 60);
+  assert (lwes_transport != NULL );
+  assert (mondemand_add_transport (client, lwes_transport) == 0);
+  stderr_transport = mondemand_transport_stderr_create();
+  assert (mondemand_add_transport(client, stderr_transport) == 0);
+  test_transport = make_test_transport ();
+  assert (mondemand_add_transport(client, test_transport) == 0);
+
+  /* set a context */
+  assert (mondemand_set_context(client, "context-key-1", "context-value-1") == 0);
+  /* test some error cases */
+
+  /* no id */
+  assert (mondemand_flush_annotation (NULL,
+                                      1234567,
+                                      "something happened",
+                                      NULL,
+                                      NULL,
+                                      0,
+                                      client) == -2);
+
+  /* bad timestamp */
+  assert (mondemand_flush_annotation ("foo",
+                                      -1,
+                                      "something happened",
+                                      NULL,
+                                      NULL,
+                                      0,
+                                      client) == -2);
+
+  /* no description */
+  assert (mondemand_flush_annotation ("foo",
+                                      1234567,
+                                      NULL,
+                                      NULL,
+                                      NULL,
+                                      0,
+                                      client) == -2);
+
+
+  /* test with no text, no tags*/
+  assert (mondemand_flush_annotation ("foo",
+                                      1234567,
+                                      "something happened",
+                                      NULL,
+                                      NULL,
+                                      0,
+                                      client) == 0);
+
+  /* test with text, no tags */
+  assert (mondemand_flush_annotation ("foo",
+                                      1234567,
+                                      "something happened",
+                                      "with details here",
+                                      NULL,
+                                      0,
+                                      client) == 0);
+
+  /* test with no text, tags */
+  assert (mondemand_flush_annotation ("foo",
+                                      1234567,
+                                      "something happened",
+                                      NULL,
+                                      tags,
+                                      tag_count,
+                                      client) == 0);
+
+  /* test with text, tags */
+  assert (mondemand_flush_annotation ("foo",
+                                      1234567,
+                                      "something happened",
+                                      "with details here",
+                                      tags,
+                                      tag_count,
+                                      client) == 0);
+
+  /* test with text, tags */
+  assert (mondemand_flush_annotation ("foo",
+                                      1234567,
+                                      "something happened",
+                                      "with details here",
+                                      tags,
+                                      1,
+                                      client) == 0);
+
+  /* test lower layer failure */
+  fail_annotation_callback = 1;
+  assert (mondemand_flush_annotation ("foo",
+                                      1234567,
+                                      "something happened",
+                                      "with details here",
+                                      tags,
+                                      1,
+                                      client) == -1);
+  fail_annotation_callback = 0;
+
+  mondemand_client_destroy (client);
+}
+
+static void other_test (void)
+{
+  int i;
+  for (i=0; i < 8; i++)
+    {
+      assert (
+        mondemand_log_level_from_string (MonDemandLogLevelStrings[i]) == i
+      );
+    }
+  assert (mondemand_log_level_from_string (NULL) == -1);
+  assert (mondemand_log_level_from_string ("unknown") == -1);
+
+  assert (MONDEMAND_GAUGE == mondemand_stat_type_from_string ("gauge"));
+  assert (MONDEMAND_COUNTER == mondemand_stat_type_from_string ("counter"));
+  assert (MONDEMAND_UNKNOWN == mondemand_stat_type_from_string ("unknown"));
 }
 
 int
@@ -210,14 +565,7 @@ main(void)
   assert( client != NULL );
 
   /* add some transports */
-  transport = (struct mondemand_transport *) 
-                malloc(sizeof(struct mondemand_transport));  
-
-  transport->log_sender_function = &log_sender_callback;
-  transport->stats_sender_function = &stats_sender_callback;
-  transport->destroy_function = &destroy_callback;
-  transport->userdata = NULL;
-
+  transport = make_test_transport ();
   mondemand_add_transport(client, transport); 
 
   realloc_fail = 1;
@@ -225,7 +573,7 @@ main(void)
   realloc_fail = 0;
 
   /* set some contexts */
-  mondemand_set_context(client, "context-key-1", "context-value-1");
+  assert (mondemand_set_context(client, "context-key-1", "context-value-1") == 0);
 
   /* try it with strdup errors */
   strdup_fail = 1;
@@ -267,8 +615,7 @@ main(void)
 
   /* remove the rest */
   mondemand_remove_all_contexts(client);
-  assert( client->contexts->num == 0 );
-  
+  assert( m_hash_table_num (client->contexts) == 0 );
 
   /* leave some dangling contexts for destroy to clean up */
   for( i=0; i<1000; ++i )
@@ -380,6 +727,14 @@ main(void)
   mondemand_flush_stats(client);
   fail_stats_callback = 0;
 
+  fail_trace_callback = 1;
+  mondemand_initialize_trace (client,"owner","id","message");
+  mondemand_set_trace (client, "foo", "bar");
+  mondemand_flush_trace (client);
+  fail_trace_callback = 0;
+  mondemand_flush_trace (client);
+  mondemand_clear_trace (client);
+
   realloc_fail = 1;
   mondemand_flush(client);
   realloc_fail = 0;
@@ -387,10 +742,15 @@ main(void)
   mondemand_flush_stats(client);
   mondemand_flush(client);
 
+  assert (mondemand_reset_stats (client) == 0);
+
   /* free up the client and transports */
   mondemand_client_destroy(client);
 
+  trace_test ();
+  perf_test ();
+  annotation_test ();
+  other_test ();
+
   return 0;
 }
-
-

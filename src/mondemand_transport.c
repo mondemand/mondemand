@@ -22,6 +22,8 @@
 #define LWES_LOG_MSG "MonDemand::LogMsg"
 #define LWES_STATS_MSG "MonDemand::StatsMsg"
 #define LWES_TRACE_MSG "MonDemand::TraceMsg"
+#define LWES_PERF_MSG "MonDemand::PerfMsg"
+#define LWES_ANNOTATION_MSG "MonDemand::AnnotationMsg"
 
 /* private method forward declarations */
 int mondemand_transport_stderr_log_sender(
@@ -49,6 +51,26 @@ int mondemand_transport_stderr_trace_sender(
                       const int trace_count,
                       void *userdata);
 
+int mondemand_transport_stderr_perf_sender(
+               const char *id,
+               const char *caller_label,
+               const struct mondemand_timing timings[],
+               const int timings_count,
+               const struct mondemand_context contexts[],
+               const int context_count,
+               void *userdata);
+
+int mondemand_transport_stderr_annotation_sender(
+               const char *id,
+               const long long int timestamp,
+               const char *description,
+               const char *text,
+               const char *tags[],
+               const int tag_count,
+               const struct mondemand_context contexts[],
+               const int context_count,
+               void *userdata);
+
 int mondemand_transport_lwes_log_sender(
                       const char *program_identifier,
                       const struct mondemand_log_message messages[],
@@ -74,6 +96,26 @@ int mondemand_transport_lwes_trace_sender(
                       const int trace_count,
                       void *userdata);
 
+int mondemand_transport_lwes_perf_sender(
+               const char *id,
+               const char *caller_label,
+               const struct mondemand_timing[],
+               const int timings_count,
+               const struct mondemand_context[],
+               const int context_count,
+               void *userdata);
+
+int mondemand_transport_lwes_annotation_sender(
+               const char *id,
+               const long long int timestamp,
+               const char *description,
+               const char *text,
+               const char *tags[],
+               const int num_tags,
+               const struct mondemand_context[],
+               const int context_count,
+               void *userdata);
+
 /*=========================================================================*/
 /* Pubilc API Methods                                                      */
 /*=========================================================================*/
@@ -94,6 +136,10 @@ mondemand_transport_stderr_create(void)
         &mondemand_transport_stderr_stats_sender;
       transport->trace_sender_function =
         &mondemand_transport_stderr_trace_sender;
+      transport->perf_sender_function =
+        &mondemand_transport_stderr_perf_sender;
+      transport->annotation_sender_function =
+        &mondemand_transport_stderr_annotation_sender;
       transport->destroy_function =
         &mondemand_transport_stderr_destroy;
       transport->userdata = NULL; /* not used */
@@ -146,6 +192,10 @@ struct mondemand_transport *mondemand_transport_lwes_create_with_ttl(
             &mondemand_transport_lwes_stats_sender;
           transport->trace_sender_function =
             &mondemand_transport_lwes_trace_sender;
+          transport->perf_sender_function =
+            &mondemand_transport_lwes_perf_sender;
+          transport->annotation_sender_function =
+            &mondemand_transport_lwes_annotation_sender;
           transport->destroy_function =
             &mondemand_transport_lwes_destroy;
           transport->userdata =
@@ -182,7 +232,7 @@ void mondemand_transport_lwes_destroy(struct mondemand_transport *transport)
 int
 mondemand_transport_stderr_log_sender(
                       const char *program_identifier,
-                      const struct mondemand_log_message messages[], 
+                      const struct mondemand_log_message messages[],
                       const int message_count,
                       const struct mondemand_context contexts[],
                       const int context_count,
@@ -231,7 +281,6 @@ mondemand_transport_stderr_log_sender(
 
   return 0;
 }
-
 
 int
 mondemand_transport_stderr_stats_sender(
@@ -297,6 +346,86 @@ mondemand_transport_stderr_trace_sender
   (void) userdata;
 
   return 0;
+}
+
+int mondemand_transport_stderr_perf_sender(
+               const char *id,
+               const char *caller_label,
+               const struct mondemand_timing timings[],
+               const int timings_count,
+               const struct mondemand_context contexts[],
+               const int context_count,
+               void *userdata)
+{
+  int t = 0;
+  int c = 0;
+
+  for (t = 0; t < timings_count; ++t)
+    {
+      fprintf (stderr, "[%s]", id);
+      if (context_count > 0)
+        {
+          for(c = 0; c < context_count; ++c )
+            {
+              fprintf (stderr, " : %s=%s", contexts[c].key,
+                        contexts[c].value );
+            }
+        }
+      fprintf (stderr, " : %s -> %s : %lld -> %lld\n", caller_label,
+               timings[t].label, timings[t].start, timings[t].end);
+    }
+
+  /* we don't need userdata so just satisfy -Wall */
+  (void) userdata;
+
+  return 0;
+}
+
+int mondemand_transport_stderr_annotation_sender(
+               const char *id,
+               const long long int timestamp,
+               const char *description,
+               const char *text,
+               const char *tags[],
+               const int tag_count,
+               const struct mondemand_context contexts[],
+               const int context_count,
+               void *userdata)
+{
+  int t = 0;
+  int c = 0;
+
+  fprintf (stderr, "[%s]", id);
+  if (context_count > 0)
+    {
+      for(c = 0; c < context_count; ++c )
+        {
+          fprintf (stderr, " : %s=%s", contexts[c].key,
+                    contexts[c].value );
+        }
+    }
+  fprintf (stderr, " : %lld", timestamp);
+  if (tag_count > 0)
+    {
+      fprintf (stderr, " : ");
+      for (t = 0 ; t < tag_count - 1; ++t)
+        {
+          fprintf (stderr, "%s,", tags[t]);
+        }
+      fprintf (stderr, "%s", tags[t]);
+    }
+  fprintf (stderr, " : %s", description);
+  if (text != NULL)
+    {
+      fprintf (stderr, " : %s", text);
+    }
+  fprintf (stderr, "\n");
+
+  /* we don't need userdata so just satisfy -Wall */
+  (void) userdata;
+
+  return 0;
+
 }
 
 int
@@ -458,3 +587,110 @@ mondemand_transport_lwes_trace_sender
   lwes_event_destroy(event);
   return 0;
 }
+
+int mondemand_transport_lwes_perf_sender(
+               const char *id,
+               const char *caller_label,
+               const struct mondemand_timing timings[],
+               const int timings_count,
+               const struct mondemand_context contexts[],
+               const int context_count,
+               void *userdata)
+{
+  struct lwes_emitter *emitter = userdata;
+  struct lwes_event *event = NULL;
+  char key_buffer[31];
+  int t = 0;
+  int c = 0;
+
+  if (timings_count > 0)
+    {
+      event = lwes_event_create (NULL, (LWES_SHORT_STRING) LWES_PERF_MSG);
+      lwes_event_set_STRING(event, "id", id);
+      lwes_event_set_STRING(event, "caller_label", caller_label);
+      lwes_event_set_U_INT_16(event, "num", timings_count);
+      for (t = 0; t < timings_count; ++t)
+        {
+          snprintf (key_buffer, sizeof(key_buffer), "label%d", t);
+          lwes_event_set_STRING (event, key_buffer, timings[t].label);
+          snprintf (key_buffer, sizeof(key_buffer), "start%d", t);
+          lwes_event_set_INT_64 (event, key_buffer, timings[t].start);
+          snprintf (key_buffer, sizeof(key_buffer), "end%d", t);
+          lwes_event_set_INT_64 (event, key_buffer, timings[t].end);
+        }
+      if( context_count > 0 )
+        {
+          lwes_event_set_U_INT_16(event, "ctxt_num", context_count);
+          for(c = 0; c < context_count; ++c )
+            {
+              snprintf(key_buffer, sizeof(key_buffer), "ctxt_k%d", c);
+              lwes_event_set_STRING(event, key_buffer, contexts[c].key);
+              snprintf(key_buffer, sizeof(key_buffer), "ctxt_v%d", c);
+              lwes_event_set_STRING(event, key_buffer, contexts[c].value);
+            }
+        }
+
+      lwes_emitter_emit(emitter, event);
+      lwes_event_destroy(event);
+  }
+
+  return 0;
+}
+
+int mondemand_transport_lwes_annotation_sender(
+               const char *id,
+               const long long int timestamp,
+               const char *description,
+               const char *text,
+               const char *tags[],
+               const int tag_count,
+               const struct mondemand_context contexts[],
+               const int context_count,
+               void *userdata)
+{
+  struct lwes_emitter *emitter = userdata;
+  struct lwes_event *event = NULL;
+  char key_buffer[31];
+  int t = 0;
+  int c = 0;
+
+  event = lwes_event_create (NULL, (LWES_SHORT_STRING) LWES_ANNOTATION_MSG);
+  lwes_event_set_STRING(event, "id", id);
+  lwes_event_set_INT_64(event, "timestamp", timestamp);
+  lwes_event_set_STRING(event, "description", description);
+  if (text != NULL)
+    {
+      lwes_event_set_STRING(event, "text", text);
+    }
+
+  if (tag_count > 0)
+    {
+      lwes_event_set_U_INT_16 (event, "tag_num", tag_count);
+      for (t = 0; t < tag_count; ++t)
+        {
+          snprintf (key_buffer, sizeof(key_buffer), "tag%d", t);
+          lwes_event_set_STRING (event, key_buffer, tags[t]);
+        }
+    }
+
+  if( context_count > 0 )
+    {
+      lwes_event_set_U_INT_16(event, "ctxt_num", context_count);
+      for(c = 0; c < context_count; ++c )
+        {
+          snprintf(key_buffer, sizeof(key_buffer), "ctxt_k%d", c);
+          lwes_event_set_STRING(event, key_buffer, contexts[c].key);
+          snprintf(key_buffer, sizeof(key_buffer), "ctxt_v%d", c);
+          lwes_event_set_STRING(event, key_buffer, contexts[c].value);
+        }
+    }
+
+  lwes_emitter_emit(emitter, event);
+  lwes_event_destroy(event);
+
+  return 0;
+}
+
+
+
+

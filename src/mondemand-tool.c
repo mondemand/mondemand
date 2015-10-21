@@ -30,10 +30,6 @@ static const char help[] =
   "    -p <program identifier>"                                        "\n"
   "       Specify a string as a <program identifier>."                 "\n"
   ""                                                                   "\n"
-  "    -T <owner_id>:<trace_id>:<message>"                             "\n"
-  "       For trace messages, the owner and trace ids along with a"    "\n"
-  "       message, all as strings, no colons in owner or trace ids."   "\n"
-  ""                                                                   "\n"
   "  Transport Options:"                                               "\n"
   ""                                                                   "\n"
   "    -o lwes:<iface>:<ip>:<port> | lwes:<iface>:<ip>:<port>:<ttl> | stderr""\n"
@@ -73,20 +69,25 @@ static const char help[] =
   "                 info     debug"                                    "\n"
   "       msg   - the message to send"                                 "\n"
   ""                                                                   "\n"
-  "    -l man be specified multiple times."                            "\n"
+  "      -l may be specified multiple times."                          "\n"
   ""                                                                   "\n"
   "  Stats Options:"                                                   "\n"
   ""                                                                   "\n"
   "    -s <type>:<name>:<value>"                                       "\n"
   "      Send the value <value> for the statistic named <name>"        "\n"
   "      of the given <type>."                                         "\n"
-  "      May be specified multiple times."                             "\n"
-  "      If the same name is given, the last value will be the one"    "\n"
-  "      sent via mondemand."                                          "\n"
   "      The name should not contain a ':'."                           "\n"
   "      Type should be either 'gauge' or 'counter'"                   "\n"
   ""                                                                   "\n"
+  "      -s may be specified multiple times."                          "\n"
+  "      If the same name is given, the last value will be the one"    "\n"
+  "      sent via mondemand."                                          "\n"
+  ""                                                                   "\n"
   "  Trace Options:"                                                   "\n"
+  ""                                                                   "\n"
+  "    -T <owner_id>:<trace_id>:<message>"                             "\n"
+  "       For trace messages, the owner and trace ids along with a"    "\n"
+  "       message, all as strings, no colons in owner or trace ids."   "\n"
   ""                                                                   "\n"
   "    -t <key>:<value>"                                               "\n"
   "      Add the trace <key> with the value <value> to mondemand"      "\n"
@@ -94,7 +95,31 @@ static const char help[] =
   "      All traces are aggregated and sent with the owner and"        "\n"
   "      trace id from the -T option"                                  "\n"
   ""                                                                   "\n"
-  "    -t may be specified multiple times"                             "\n"
+  "      -t may be specified multiple times"                           "\n"
+  ""                                                                   "\n"
+  "  Performance Trace Options:"                                       "\n"
+  ""                                                                   "\n"
+  "    -X <id>:<caller_label>"                                         "\n"
+  "       For Performance Trace messages, the id for the performance"  "\n"
+  "       trace, as well as a label for the caller."                   "\n"
+  ""                                                                   "\n"
+  "    -x <label>:<start>:<end>"                                       "\n"
+  "       Add a performance trace for the given label.  The start and" "\n"
+  "       end should be given in milliseconds since epoch."            "\n"
+  ""                                                                   "\n"
+  "       -x may be specified multiple times."                         "\n"
+  ""                                                                   "\n"
+  "  Annotation Options:"                                              "\n"
+  ""                                                                   "\n"
+  "    -a <id>:<timestamp>:<description>[:<tag1>,<tag2>...]"           "\n"
+  "       The <id> should be unique for each annotation."              "\n"
+  "       The timestamp should be in UTC seconds since epoch."         "\n"
+  "       The <desc> and <tag> values should not contain a ':' and"    "\n"
+  "       the <tag> values should not contain a ','."                  "\n"
+  ""                                                                   "\n"
+  "    -A <text>"                                                      "\n"
+  "       For annotations, -A is separate as it may contain various"   "\n"
+  "       characters not allowed in -a."                               "\n"
   ""                                                                   "\n"
   "  Other Options:"                                                   "\n"
   ""                                                                   "\n"
@@ -108,6 +133,7 @@ static const char help[] =
  * is an error
  */
 #define MAX_WORDS 10
+
 
 static struct mondemand_transport *
 handle_transport_arg (const char *arg)
@@ -403,16 +429,183 @@ handle_trace_arg (const char *arg,
   return ret;
 }
 
+static int
+initialize_perf_arg (const char *arg,
+                     struct mondemand_client *client)
+{
+  const char *sep  = ":";
+  char *buffer;
+  char *tofree;
+  char *id;
+  char *caller_label;
+
+  tofree = buffer = strdup (arg);
+
+  if (buffer == NULL)
+    {
+      return -1;
+    }
+
+  id = strsep (&buffer, sep);
+  if (buffer != NULL && strcmp (buffer, "") != 0)
+    {
+      caller_label = strsep (&buffer, sep);
+      assert (mondemand_initialize_performance_trace
+                (client, id, caller_label) == 0);
+    }
+  else
+    {
+      fprintf (stderr,
+               "ERROR: id and caller_label are required for perf events\n");
+    }
+
+  free (tofree);
+  return 0;
+}
+
+static int
+handle_perf_arg (const char *arg,
+                 struct mondemand_client *client)
+{
+  const char *sep  = ":";
+  char *label;
+  long long int start;
+  long long int end;
+  char *buffer;
+  char *tofree;
+  int ret = -1;
+
+  tofree = buffer = strdup (arg);
+  if (buffer == NULL)
+    {
+      return ret;
+    }
+
+  label = strsep (&buffer, sep);
+  if (buffer != NULL && strcmp (buffer, "") != 0)
+    {
+      start = atoll (strsep (&buffer, sep));
+      if (buffer != NULL && strcmp (buffer, "") != 0)
+        {
+          end = atoll (buffer);
+          mondemand_add_performance_trace_timing (client, label, start, end);
+          ret = 0;
+        }
+    }
+
+  free (tofree);
+  return ret;
+}
+
+static int
+handle_annotation_arg (const char *arg,
+                       const char *annotation_text,
+                       struct mondemand_client *client)
+{
+  const char *sep  = ":";
+  const char *empty = "";
+  char *word;
+  const char *words[MAX_WORDS];
+  char *buffer;
+  char *tofree;
+  int count = 0;
+  int i;
+
+  for (i = 0 ; i < MAX_WORDS; i++)
+    {
+      words[i] = empty;
+    }
+
+  tofree = buffer = strdup (arg);
+  if (buffer == NULL)
+    {
+      return -1;
+    }
+
+  /* get all the words between the ':'s */
+  while ((word = strsep (&buffer, sep)) && count < MAX_WORDS)
+    {
+      words[count++]=word;
+    }
+
+  if (count < 3 || count > 4)
+    {
+      fprintf (stderr, "ERROR: annotation (-a) arg requires 3 or 4 parts\n");
+      fprintf (stderr, "       <id>:<timestamp>:<description>[:<tag1>,<tag2>...]\n");
+    }
+  else
+    {
+      const char *id = words[0];
+      const long long int timestamp = atoll (words[1]);
+      const char *description = words[2];
+      if (count > 3)
+        {
+          char *tag;
+          const char *tags[MAX_WORDS];
+          char *tagbuffer;
+          char *tagtofree;
+          int j;
+          int tagcount = 0;
+
+          for (j = 0 ; j < MAX_WORDS; j++)
+            {
+              tags[j] = empty;
+            }
+          tagtofree = tagbuffer = strdup (words[3]);
+          if (tagbuffer == NULL)
+            {
+              return -1;
+            }
+          /* get all the words between the ','s */
+          while ((tag= strsep (&tagbuffer, ",")) && tagcount < MAX_WORDS)
+            {
+              tags[tagcount++]=tag;
+            }
+
+          /* deal with tags */
+          assert (mondemand_flush_annotation (id,
+                                              timestamp,
+                                              description,
+                                              annotation_text,
+                                              tags,
+                                              tagcount,
+                                              client) == 0);
+          free (tagtofree);
+        }
+      else
+        {
+          assert (mondemand_flush_annotation (id,
+                                              timestamp,
+                                              description,
+                                              annotation_text,
+                                              NULL,
+                                              0,
+                                              client) == 0);
+        }
+    }
+  free (tofree);
+
+  return 0;
+}
+
 int main (int   argc,
           char *argv[])
 {
-  int stat_count = 0;
-  int log_count = 0;
+  const char *prog_id = "mondemand-tool";
+  const char *args = "p:T:o:c:l:s:t:X:x:A:a:h";
+
   struct mondemand_client *client = NULL;
   struct mondemand_transport *transport = NULL;
+
+  int stat_count = 0;
+  int log_count = 0;
   int trace_initialized = 0;
-  const char *args = "p:T:o:c:l:s:t:h";
-  const char *prog_id = "mondemand-tool";
+
+  int performance_trace_initialized = 0;
+
+  unsigned short annotation_count = 0;
+  unsigned short annotation_text_count = 0;
+  char *annotation_text = NULL;
 
   /* turn off error messages, I'll handle them */
   opterr = 0;
@@ -432,6 +625,17 @@ int main (int   argc,
             prog_id = optarg;
             break;
 
+          case 'a':
+            /* capture a count so we can error if there are too many */
+            annotation_count++;
+            break;
+
+          case 'A':
+            annotation_text = optarg;
+            /* capture a count so we can error if there are too many */
+            annotation_text_count++;
+            break;
+
           /* deal with these below */
           case 'T':
           case 'o':
@@ -439,6 +643,8 @@ int main (int   argc,
           case 'l':
           case 's':
           case 't':
+          case 'X':
+          case 'x':
             break;
 
           case 'h':
@@ -450,6 +656,18 @@ int main (int   argc,
                      "error: unrecognized command line option -%c\n",
                      optopt);
         }
+    }
+  if (annotation_count > 1)
+    {
+      fprintf (stderr,
+               "ERROR: can't specify '-a' more than once\n");
+      exit (1);
+    }
+  if (annotation_text_count > 1)
+    {
+      fprintf (stderr,
+               "ERROR: can't specify '-A' more than once\n");
+      exit (1);
     }
 
   /* create the client */
@@ -478,6 +696,11 @@ int main (int   argc,
           case 'p':
             break;
 
+          case 'X':
+            assert (initialize_perf_arg (optarg, client) == 0);
+            performance_trace_initialized = 1;
+            break;
+
           case 'T':
             assert (initialize_trace_arg (optarg, client) == 0);
             trace_initialized = 1;
@@ -493,6 +716,9 @@ int main (int   argc,
           case 's':
           case 't':
           case 'h':
+          case 'x':
+          case 'A':
+          case 'a':
             break;
 
           default:
@@ -528,6 +754,10 @@ int main (int   argc,
           case 's':
           case 't':
           case 'h':
+          case 'X':
+          case 'x':
+          case 'A':
+          case 'a':
             break;
 
           default:
@@ -581,6 +811,28 @@ int main (int   argc,
                 fprintf (stderr, "ERROR: can't specify '-t' without '-T'\n"
                                  "       ignoring argument\n");
               }
+            break;
+
+          case 'X':
+            break;
+
+          case 'x':
+            if (performance_trace_initialized)
+              {
+                handle_perf_arg (optarg, client);
+              }
+            else
+              {
+                fprintf (stderr, "ERROR: can't specify '-x' without '-X'\n"
+                                 "       ignoring argument\n");
+              }
+            break;
+
+          case 'A':
+            break;
+
+          case 'a':
+            handle_annotation_arg (optarg, annotation_text, client);
             break;
 
           case 'h':

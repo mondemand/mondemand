@@ -220,8 +220,8 @@ mondemand_initialize_trace (struct mondemand_client *client,
                             const char *trace_id,
                             const char *message);
 
-/*!\f void
- *    mondemand_clear_trace (struct mondemand_client *client)
+/*!\fn void
+ *     mondemand_clear_trace (struct mondemand_client *client)
  *
  * \brief Clears all current trace information
  */
@@ -280,6 +280,67 @@ mondemand_remove_all_traces (struct mondemand_client *client);
  */
 int
 mondemand_flush_trace(struct mondemand_client *client);
+
+/*!\fn int
+ *     mondemand_initialize_performance_trace (struct mondemand_client *client,
+ *                                             const char *id,
+ *                                             const char *caller_label)
+ * \brief Initialize required information for a performance trace message
+ */
+int
+mondemand_initialize_performance_trace (struct mondemand_client *client,
+                                        const char *id,
+                                        const char *caller_label);
+
+/*!\fn int
+ *      mondemand_add_performance_trace_timing (struct mondemand_client *client,
+ *                                              const char *label,
+ *                                              const long long int start,
+ *                                              const long long int end) 
+ *
+ * \brief Add a performance timing set to the current performance trace
+ *        event
+ */
+int
+mondemand_add_performance_trace_timing (struct mondemand_client *client,
+                                        const char *label,
+                                        const long long int start,
+                                        const long long int end);
+
+/*!\fn void
+ *     mondemand_clear_performance_trace (struct mondemand_client *client)
+ *
+ * \brief Clears are current performance trace information.
+ */
+void
+mondemand_clear_performance_trace (struct mondemand_client *client);
+
+/*!\fn int
+ *     mondemand_flush_performanc_trace(struct mondemand_client *client)
+ * \brief Flush a trace message to transports
+ */
+int
+mondemand_flush_performance_trace(struct mondemand_client *client);
+
+/*!\fn int
+ *     mondemand_flush_annotation (const char* id,
+ *                                 const long long int timestamp,
+ *                                 const char* description,
+ *                                 const char* text,
+ *                                 const char** tags,
+ *                                 const int num_tags,
+ *                                 struct mondemand_client *client)
+ *
+ * \brief Flush an annotation message to transports
+ */
+int
+mondemand_flush_annotation (const char* id,
+                            const long long int timestamp,
+                            const char* description,
+                            const char* text,
+                            const char** tags,
+                            const int num_tags,
+                            struct mondemand_client *client);
 
 /*=====================================================================*/
 /* Useful Macros                                                       */

@@ -49,6 +49,13 @@ struct mondemand_stats_message
   MondemandStatType type;
 };
 
+struct mondemand_timing
+{
+  char *label;
+  long long int start;
+  long long int end;
+};
+
 /* define callback functions */
 
 /* stderr transport */
@@ -94,16 +101,41 @@ typedef int (*mondemand_transport_trace_sender_t)
                const int trace_count,
                void *);
 
+/* method called when trying to log performance traces */
+typedef int (*mondemand_transport_perf_sender_t)
+              (const char *id,
+               const char *caller_label,
+               const struct mondemand_timing timings[],
+               const int timings_count,
+               const struct mondemand_context contexts[],
+               const int context_count,
+               void *);
+
+/* method called when trying to log annotation traces */
+typedef int (*mondemand_transport_annotation_sender_t)
+              (const char *id,
+               const long long int timestamp,
+               const char *description,
+               const char *text,
+               const char *tags[],
+               const int tag_count,
+               const struct mondemand_context contexts[],
+               const int context_count,
+               void *);
+
+
 typedef void (*mondemand_transport_destroy_t)
                (struct mondemand_transport *transport);
 
 /* a transport struct to encapsulate the data */
 struct mondemand_transport
 {
-  mondemand_transport_log_sender_t   log_sender_function;
-  mondemand_transport_stats_sender_t stats_sender_function;
-  mondemand_transport_trace_sender_t trace_sender_function;
-  mondemand_transport_destroy_t      destroy_function;
+  mondemand_transport_log_sender_t        log_sender_function;
+  mondemand_transport_stats_sender_t      stats_sender_function;
+  mondemand_transport_trace_sender_t      trace_sender_function;
+  mondemand_transport_perf_sender_t       perf_sender_function;
+  mondemand_transport_annotation_sender_t annotation_sender_function;
+  mondemand_transport_destroy_t           destroy_function;
   void *userdata;
 };
 

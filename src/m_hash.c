@@ -292,6 +292,11 @@ m_hash_table_keys(struct m_hash_table *hash_table)
   return NULL;
 }
 
+int
+m_hash_table_num (struct m_hash_table *hash_table)
+{
+  return hash_table->num;
+}
 
 /* ======================================================================== */
 /* Private API functions                                                     */

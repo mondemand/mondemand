@@ -3,8 +3,10 @@
 check_PROGRAMS = \
   testmem \
   testhash \
-  testmondemandlib \
-  testmultitrace
+  testmultitrace \
+  testannotation \
+  testperf \
+  testmondemandlib
 
 testmem_SOURCES = testmem.c
 testmem_LDADD =
@@ -26,6 +28,22 @@ testmultitrace_LDADD = ../src/m_mem.o \
                        ../src/mondemand_transport.o \
                        ../src/mondemandlib.o \
                        $(FW_PKGCONFIG_PREREQS_LIBS)
+
+testannotation_SOURCES = testannotation.c
+testannotation_LDADD = ../src/m_mem.o \
+                       ../src/m_hash.o \
+                       ../src/mondemand_trace.o \
+                       ../src/mondemand_transport.o \
+                       ../src/mondemandlib.o \
+                       $(FW_PKGCONFIG_PREREQS_LIBS)
+
+testperf_SOURCES = testperf.c
+testperf_LDADD = ../src/m_mem.o \
+                 ../src/m_hash.o \
+                 ../src/mondemand_trace.o \
+                 ../src/mondemand_transport.o \
+                 ../src/mondemandlib.o \
+                 $(FW_PKGCONFIG_PREREQS_LIBS)
 
 TESTS = \
   $(check_PROGRAMS)

@@ -6,3 +6,5 @@ testhash
 testmem
 testmondemandlib
 testmultitrace
+testannotation
+testperf
