@@ -2,9 +2,9 @@
 Makefile.am
 test-wrapper.sh
 test-wrapper.sh.in
+testannotation
 testhash
 testmem
 testmondemandlib
 testmultitrace
-testannotation
 testperf
