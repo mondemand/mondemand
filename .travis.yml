@@ -8,7 +8,6 @@ install:
   - wget https://github.com/dukesoferl/fw-template-C/archive/rpm-0_0_11-noarch.tar.gz -O fw-template-C-0.0.11.tar.gz
   - tar -xzvf fw-template-C-0.0.11.tar.gz
   - cd fw-template-C-rpm-0_0_11-noarch && ./bootstrap && ./configure --prefix=$HOME && make && make install && cd ..
-#  - cd mondemand/mondemand
-#  - wget https://github.com/lwes/lwes/archive/lwes-0.23.2.tar.gz
-#  - tar -xzvf lwes-0.23.2.tar.gz
-#  - cd lwes-lwes-0.23.2 && ./bootstrap && ./configure --prefix=$HOME && make install
+  - wget https://github.com/lwes/lwes/archive/lwes-0.23.2.tar.gz
+  - tar -xzvf lwes-0.23.2.tar.gz
+  - cd lwes-lwes-0.23.2 && ./bootstrap && ./configure --prefix=$HOME && make install && cd ..
