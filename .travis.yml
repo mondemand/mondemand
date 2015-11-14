@@ -1,12 +1,10 @@
 language: c
-addons:
-  packages:
-    - libtool
 before_script: ./bootstrap
 install:
   - git clone https://github.com/dukesoferl/fw.git
   - cd fw && ./bootstrap && ./configure --prefix=/usr && sudo make install
   - git clone https://github.com/dukesoferl/fw-template-C.git
   - cd fw-template-C && ./bootstrap && ./configure --prefix=/usr && sudo make install
-  - git clone https://github.com/lwes/lwes.git
-  - cd lwes && ./bootstrap && ./configure --prefix=/usr && sudo make install
+  - wget https://github.com/lwes/lwes/archive/lwes-0.23.2.tar.gz
+  - tar -xzvf lwes-0.23.2.tar.gz
+  - cd lwes-0.23.2 && ./bootstrap && ./configure --prefix=/usr && sudo make install
