@@ -1,0 +1,5 @@
+language: c
+before_script: ./bootstrap
+install:
+  - git checkout git@github.com:lwes/lwes.git
+  - cd lwes && ./bootstrap && ./configure --prefix=/usr && sudo make install
