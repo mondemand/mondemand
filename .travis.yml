@@ -12,3 +12,5 @@ install:
   - tar -xzvf lwes-0.24.0.tar.gz
   - cd lwes-lwes-0.24.0 && ./bootstrap && ./configure --prefix=$HOME && make install && cd ..
   - export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$HOME/lib/pkgconfig
+  - export FW_PKGCONFIG_PREREQS_CFLAGS=`pkg-config --cflags lwes-0`
+  - export FW_PKGCONFIG_PREREQS_LIBS=`pkg-config --libs lwes-0`
