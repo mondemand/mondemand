@@ -1,15 +1,14 @@
 language: c
 before_script: ./bootstrap
 install:
-  - pwd
   - wget https://github.com/dukesoferl/fw/archive/rpm-0_9_1-noarch.tar.gz -O fw-0.9.1.tar.gz
   - tar -xzvf fw-0.9.1.tar.gz
-  - cd fw-rpm-0_9_1-noarch && ./bootstrap && ./configure --prefix=$HOME && make && make install && cd && pwd
+  - cd fw-rpm-0_9_1-noarch && ./bootstrap && ./configure --prefix=$HOME && make && make install && cd ..
   - export PATH=$PATH:$HOME/bin
   - wget https://github.com/dukesoferl/fw-template-C/archive/rpm-0_0_11-noarch.tar.gz -O fw-template-C-0.0.11.tar.gz
   - tar -xzvf fw-template-C-0.0.11.tar.gz
-  - cd fw-template-C-rpm-0_0_11-noarch && ./bootstrap && ./configure --prefix=$HOME && make && make install && cd && pwd
-  - cd mondemand/mondemand
+  - cd fw-template-C-rpm-0_0_11-noarch && ./bootstrap && ./configure --prefix=$HOME && make && make install && cd ..
+#  - cd mondemand/mondemand
 #  - wget https://github.com/lwes/lwes/archive/lwes-0.23.2.tar.gz
 #  - tar -xzvf lwes-0.23.2.tar.gz
 #  - cd lwes-lwes-0.23.2 && ./bootstrap && ./configure --prefix=$HOME && make install
