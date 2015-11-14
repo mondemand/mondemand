@@ -1,3 +1,6 @@
+Version 4.2.1 (molinaro)
+  * version bump and release for travis CI fixes
+
 Version 4.2.0 (molinaro)
   * the mondemand library and mondemand-tool now supports performance tracing
   events and annotation events
