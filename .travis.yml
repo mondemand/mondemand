@@ -11,3 +11,4 @@ install:
   - wget https://github.com/lwes/lwes/archive/lwes-0.24.0.tar.gz
   - tar -xzvf lwes-0.24.0.tar.gz
   - cd lwes-lwes-0.24.0 && ./bootstrap && ./configure --prefix=$HOME && make install && cd ..
+  - export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$HOME/lib/pkgconfig
