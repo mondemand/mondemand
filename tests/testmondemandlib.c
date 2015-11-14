@@ -290,6 +290,7 @@ static void trace_test (void)
   assert (mondemand_add_transport (client, transport) == 0);
 
   trace_id = mondemand_trace_id (12345);
+  (void)trace_id; /* appease -Werror */
 
   assert (mondemand_initialize_trace (client, "owner", "id", "message 1") == 0);
   assert (mondemand_set_trace (client, "foo1", "bar1") == 0);
