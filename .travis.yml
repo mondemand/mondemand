@@ -1,4 +1,7 @@
 language: c
+addons:
+  packages:
+    - libtool
 before_script: ./bootstrap
 install:
   - git clone https://github.com/dukesoferl/fw.git
