@@ -1,9 +1,9 @@
 language: c
 before_script: ./bootstrap
 install:
-  - git checkout https://github.com/dukesoferl/fw.git
+  - git clone https://github.com/dukesoferl/fw.git
   - cd fw && ./bootstrap && ./configure --prefix=/usr && sudo make install
-  - git checkout https://github.com/dukesoferl/fw-template-C.git
+  - git clone https://github.com/dukesoferl/fw-template-C.git
   - cd fw-template-C && ./bootstrap && ./configure --prefix=/usr && sudo make install
-  - git checkout https://github.com/lwes/lwes.git
+  - git clone https://github.com/lwes/lwes.git
   - cd lwes && ./bootstrap && ./configure --prefix=/usr && sudo make install
