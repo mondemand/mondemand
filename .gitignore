@@ -22,7 +22,6 @@ depcomp
 fw
 fw-pkgout
 fw-pkgtmp
-fw.local
 install-sh
 libtool
 ltmain.sh
