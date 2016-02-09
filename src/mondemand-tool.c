@@ -132,7 +132,7 @@ static const char help[] =
 /* given a transport argument, return a transport object or NULL if there
  * is an error
  */
-#define MAX_WORDS 10
+#define MAX_WORDS 100
 
 
 static struct mondemand_transport *
@@ -142,9 +142,9 @@ handle_transport_arg (const char *arg)
   const char *empty = "";
   char *word;
   const char *words[MAX_WORDS];
+  int count = 0;
   char *buffer;
   char *tofree;
-  int count = 0;
   struct mondemand_transport *transport = NULL;
   int i;
 
@@ -240,10 +240,20 @@ handle_context_arg (const char *arg,
                     struct mondemand_client *client)
 {
   const char *sep  = ":";
-  char *ctxt_key;
+  const char *empty = "";
+  char *word;
+  const char *words[MAX_WORDS];
+  int count = 0;
+  int i;
+
   char *buffer;
   char *tofree;
   int ret = -1;
+
+  for (i = 0 ; i < MAX_WORDS; i++)
+    {
+      words[i] = empty;
+    }
 
   tofree = buffer = strdup (arg);
   if (buffer == NULL)
@@ -251,9 +261,16 @@ handle_context_arg (const char *arg,
       return ret;
     }
 
-  ctxt_key = strsep (&buffer, sep);
-  mondemand_set_context (client, ctxt_key, buffer);
-  ret = 0;
+  /* get all the words between the ':'s */
+  while ((word = strsep (&buffer, sep)) && count < MAX_WORDS)
+    {
+      words[count++]=word;
+    }
+
+  if (count == 2)
+    {
+      ret = mondemand_set_context (client, words[0], words[1]);
+    }
 
   free (tofree);
   return ret;
@@ -299,10 +316,8 @@ handle_log_arg (const char *arg,
       /* need to call the underlying implementation call because
          I need to specify different 'line' numbers so messages
          aren't counted as repeated */
-      mondemand_log_real(client, __FILE__, log_count,
-                         level, trace_id, "%s", buffer);
-
-      ret = 0;
+      ret = mondemand_log_real(client, __FILE__, log_count,
+                              level, trace_id, "%s", buffer);
     }
   else
     {
@@ -338,6 +353,7 @@ handle_stat_arg (const char *arg,
   if (type == MONDEMAND_UNKNOWN)
     {
       fprintf (stderr, "ERROR: valid types are 'counter' and 'gauge'\n");
+      ret = 1;
     }
   else
     {
@@ -348,17 +364,17 @@ handle_stat_arg (const char *arg,
           /* need to call the underlying implementation call because
              I need to specify different 'line' numbers so messages
              aren't counted as repeated */
-          mondemand_stats_perform_op (client, __FILE__, stat_count,
-                                      MONDEMAND_SET,
-                                      type,
-                                      stat_key,
-                                      stat_value);
-          ret = 0;
+          ret = mondemand_stats_perform_op (client, __FILE__, stat_count,
+                                            MONDEMAND_SET,
+                                            type,
+                                            stat_key,
+                                            stat_value);
         }
       else
         {
           fprintf (stderr, "WARNING: not sending empty statistic %s\n",
                    stat_key);
+          ret = 1;
         }
     }
 
@@ -375,12 +391,13 @@ initialize_trace_arg (const char *arg,
   char *tofree;
   char *owner;
   char *id;
+  int ret = -1;
 
   tofree = buffer = strdup (arg);
 
   if (buffer == NULL)
     {
-      return -1;
+      return ret;
     }
 
   owner = strsep (&buffer, sep);
@@ -389,16 +406,21 @@ initialize_trace_arg (const char *arg,
       id = strsep (&buffer, sep);
       if (buffer != NULL && strcmp (buffer, "") != 0)
         {
-          assert (mondemand_initialize_trace (client, owner, id, buffer) == 0);
+          if ((ret = mondemand_initialize_trace (client, owner, id, buffer)) != 0)
+            {
+              fprintf (stderr, "ERROR: can't initialize trace\n");
+            }
         }
       else
         {
           fprintf (stderr, "ERROR: message is required for trace\n");
+          ret = 1;
         }
     }
   else
     {
       fprintf (stderr, "ERROR: id is required for trace\n");
+      ret = 1;
     }
 
   free (tofree);
@@ -422,8 +444,7 @@ handle_trace_arg (const char *arg,
     }
 
   trace_key = strsep (&buffer, sep);
-  mondemand_set_trace (client, trace_key, buffer);
-  ret = 0;
+  ret = mondemand_set_trace (client, trace_key, buffer);
 
   free (tofree);
   return ret;
@@ -438,6 +459,7 @@ initialize_perf_arg (const char *arg,
   char *tofree;
   char *id;
   char *caller_label;
+  int ret = 0;
 
   tofree = buffer = strdup (arg);
 
@@ -457,10 +479,11 @@ initialize_perf_arg (const char *arg,
     {
       fprintf (stderr,
                "ERROR: id and caller_label are required for perf events\n");
+      ret = 1;
     }
 
   free (tofree);
-  return 0;
+  return ret;
 }
 
 static int
@@ -468,12 +491,24 @@ handle_perf_arg (const char *arg,
                  struct mondemand_client *client)
 {
   const char *sep  = ":";
-  char *label;
+  const char *empty = "";
+  char *word;
+  const char *words[MAX_WORDS];
+  int count = 0;
+
+  const char *label;
   long long int start;
   long long int end;
   char *buffer;
   char *tofree;
+  char *tofree2=NULL;
   int ret = -1;
+  int i;
+
+  for (i = 0 ; i < MAX_WORDS; i++)
+    {
+      words[i] = empty;
+    }
 
   tofree = buffer = strdup (arg);
   if (buffer == NULL)
@@ -481,18 +516,52 @@ handle_perf_arg (const char *arg,
       return ret;
     }
 
-  label = strsep (&buffer, sep);
-  if (buffer != NULL && strcmp (buffer, "") != 0)
+  /* get all the words between the ':'s */
+  while ((word = strsep (&buffer, sep)) && count < MAX_WORDS)
     {
-      start = atoll (strsep (&buffer, sep));
-      if (buffer != NULL && strcmp (buffer, "") != 0)
-        {
-          end = atoll (buffer);
-          mondemand_add_performance_trace_timing (client, label, start, end);
-          ret = 0;
-        }
+      words[count++]=word;
     }
 
+  /* support labels with ':' in them, by using the last 2 as the start
+   * and end, and putting the rest back together
+   */
+  if (count > 3)
+    {
+      int j;
+      tofree2 = strdup(arg);
+      tofree2[0] = '\0';
+      for (j = 0; j < count - 2; j++)
+        {
+          strcat (tofree2,words[j]);
+          if (j != count -3)
+            {
+              strcat (tofree2,":");
+            }
+        }
+      label = tofree2;
+      start = atoll(words[count-2]);
+      end = atoll(words[count-1]);
+      ret = 0;
+    }
+  else if (count == 3)
+    {
+      label = words[0];
+      start = atoll(words[1]);
+      end = atoll(words[2]);
+      ret = 0;
+    }
+  else
+    {
+      fprintf (stderr, "ERROR: -x requires 3 parts\n");
+    }
+  if (ret == 0)
+    {
+      ret = mondemand_add_performance_trace_timing (client, label, start, end);
+    }
+  if (tofree2 != NULL)
+    {
+      free(tofree2);
+    }
   free (tofree);
   return ret;
 }
@@ -510,6 +579,7 @@ handle_annotation_arg (const char *arg,
   char *tofree;
   int count = 0;
   int i;
+  int ret = 0;
 
   for (i = 0 ; i < MAX_WORDS; i++)
     {
@@ -532,6 +602,7 @@ handle_annotation_arg (const char *arg,
     {
       fprintf (stderr, "ERROR: annotation (-a) arg requires 3 or 4 parts\n");
       fprintf (stderr, "       <id>:<timestamp>:<description>[:<tag1>,<tag2>...]\n");
+      ret = 1;
     }
   else
     {
@@ -563,29 +634,35 @@ handle_annotation_arg (const char *arg,
             }
 
           /* deal with tags */
-          assert (mondemand_flush_annotation (id,
-                                              timestamp,
-                                              description,
-                                              annotation_text,
-                                              tags,
-                                              tagcount,
-                                              client) == 0);
+          if ((ret = mondemand_flush_annotation (id,
+                                                 timestamp,
+                                                 description,
+                                                 annotation_text,
+                                                 tags,
+                                                 tagcount,
+                                                 client)) != 0)
+            {
+              fprintf (stderr, "ERROR: unable to send annotation %d\n",ret);
+            }
           free (tagtofree);
         }
       else
         {
-          assert (mondemand_flush_annotation (id,
-                                              timestamp,
-                                              description,
-                                              annotation_text,
-                                              NULL,
-                                              0,
-                                              client) == 0);
+          if ((ret = mondemand_flush_annotation (id,
+                                                 timestamp,
+                                                 description,
+                                                 annotation_text,
+                                                 NULL,
+                                                 0,
+                                                 client)) != 0)
+            {
+              fprintf (stderr, "ERROR: unable to send annotation %d\n",ret);
+            }
         }
     }
   free (tofree);
 
-  return 0;
+  return ret;
 }
 
 int main (int   argc,
@@ -598,14 +675,19 @@ int main (int   argc,
   struct mondemand_transport *transport = NULL;
 
   int stat_count = 0;
+  int stat_error = 0;
   int log_count = 0;
   int trace_initialized = 0;
+  int transport_count = 0;
+  int perf_count = 0;
 
   int performance_trace_initialized = 0;
 
   unsigned short annotation_count = 0;
   unsigned short annotation_text_count = 0;
   char *annotation_text = NULL;
+
+  int ret = 0;
 
   /* turn off error messages, I'll handle them */
   opterr = 0;
@@ -653,7 +735,7 @@ int main (int   argc,
 
           default:
             fprintf (stderr,
-                     "error: unrecognized command line option -%c\n",
+                     "WARNING: unrecognized command line option -%c\n",
                      optopt);
         }
     }
@@ -697,18 +779,33 @@ int main (int   argc,
             break;
 
           case 'X':
-            assert (initialize_perf_arg (optarg, client) == 0);
+            if ((ret = initialize_perf_arg (optarg, client)) != 0)
+              {
+                fprintf (stderr, "ERROR: error initializing perf trace\n");
+                goto cleanup;
+              }
             performance_trace_initialized = 1;
             break;
 
           case 'T':
-            assert (initialize_trace_arg (optarg, client) == 0);
+            if ((ret = initialize_trace_arg (optarg, client)) != 0)
+              {
+                fprintf (stderr, "ERROR: error initializing trace\n");
+                goto cleanup;
+              }
             trace_initialized = 1;
             break;
 
           case 'o':
             transport = handle_transport_arg (optarg);
-            assert (mondemand_add_transport (client, transport) == 0);
+            if ((ret = mondemand_add_transport (client, transport)) != 0)
+              {
+                fprintf (stderr, "WARNING: unable to add transport %s\n", optarg);
+              }
+            else
+              {
+                transport_count++;
+              }
             break;
 
           case 'c':
@@ -722,10 +819,14 @@ int main (int   argc,
             break;
 
           default:
-            fprintf (stderr,
-                     "error: unrecognized command line option -%c\n",
-                     optopt);
+            break;
         }
+    }
+  if (transport_count == 0)
+    {
+      fprintf (stderr, "ERROR: must specify at least one transport with '-o'\n");
+      ret = 1;
+      goto cleanup;
     }
 
   /* reset again and get contexts */
@@ -747,7 +848,11 @@ int main (int   argc,
             break;
 
           case 'c':
-            handle_context_arg (optarg, client);
+            if (handle_context_arg (optarg, client) < 0)
+              {
+                fprintf (stderr,
+                         "WARNING: parsing of context %s failed\n", optarg);
+              }
             break;
 
           case 'l':
@@ -761,9 +866,7 @@ int main (int   argc,
             break;
 
           default:
-            fprintf (stderr,
-                     "error: unrecognized command line option -%c\n",
-                     optopt);
+            break;
         }
     }
 
@@ -788,28 +891,33 @@ int main (int   argc,
             break;
 
           case 'l':
-            if (handle_log_arg (optarg, client, log_count) >= 0)
+            if (handle_log_arg (optarg, client, log_count) == 0)
               {
                 log_count++;
               }
             break;
 
           case 's':
-            if (handle_stat_arg (optarg, client, stat_count) >= 0)
+            if (handle_stat_arg (optarg, client, stat_count) == 0)
               {
                 stat_count++;
+              }
+            else
+              {
+                stat_error++;
               }
             break;
 
           case 't':
             if (trace_initialized)
               {
-                handle_trace_arg (optarg, client);
+                ret = handle_trace_arg (optarg, client);
               }
             else
               {
                 fprintf (stderr, "ERROR: can't specify '-t' without '-T'\n"
                                  "       ignoring argument\n");
+                ret = 1;
               }
             break;
 
@@ -819,12 +927,18 @@ int main (int   argc,
           case 'x':
             if (performance_trace_initialized)
               {
-                handle_perf_arg (optarg, client);
+                if ((ret = handle_perf_arg (optarg, client)) != 0)
+                  {
+                    fprintf (stderr, "ERROR: issue with '-x' arg %s\n",optarg);
+                    goto cleanup;
+                  }
+                perf_count++;
               }
             else
               {
                 fprintf (stderr, "ERROR: can't specify '-x' without '-X'\n"
                                  "       ignoring argument\n");
+                ret = 1;
               }
             break;
 
@@ -832,19 +946,30 @@ int main (int   argc,
             break;
 
           case 'a':
-            handle_annotation_arg (optarg, annotation_text, client);
+            ret = handle_annotation_arg (optarg, annotation_text, client);
             break;
 
           case 'h':
             break;
 
           default:
-            fprintf (stderr,
-                     "error: unrecognized command line option -%c\n",
-                     optopt);
+            break;
         }
     }
+  if (performance_trace_initialized && perf_count == 0)
+    {
+      fprintf (stderr, "ERROR: perf trace started with '-X' but not sent as"
+                       " no '-x' was given\n");
+      ret = 1;
+    }
+  if (stat_error > 0)
+    {
+      fprintf (stderr, "ERROR: had issues sending some stats\n");
+      ret = 1;
+    }
+
+cleanup:
   mondemand_client_destroy (client);
 
-  return 0;
+  return ret;
 }

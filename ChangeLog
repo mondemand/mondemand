@@ -1,3 +1,7 @@
+Version 4.3.0 (molinaro)
+  * accept ":" for timing labels in performance trace events
+  * return non-zero return codes for most errors
+
 Version 4.2.1 (molinaro)
   * version bump and release for travis CI fixes
 
