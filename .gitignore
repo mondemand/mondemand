@@ -29,3 +29,4 @@ missing
 mondemand-4.0.pc
 pkgconfig-template.pc
 pkgconfig-template.pc.in
+test-driver
