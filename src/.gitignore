@@ -1,6 +1,5 @@
 .deps
 .libs
-Makefile.am
 config.h
 config.h.in
 libmondemand.la
