@@ -1,9 +1,21 @@
 language: c
-before_script: ./bootstrap
-install:
-  - wget http://www.lwes.org/downloads/lwes-c/lwes-0.25.0.tar.gz
-  - tar -xzvf lwes-0.25.0.tar.gz
-  - cd lwes-0.25.0 && ./configure --disable-hardcore --prefix=$HOME && make install && cd ..
-  - export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$HOME/lib/pkgconfig
-  - export CFLAGS=`pkg-config --cflags lwes-0`
-  - export LIBS=`pkg-config --libs lwes-0`
+
+before_script:
+  - bash ./.travis-install-deps.sh
+script:
+  - bash ./.travis-build.sh
+
+before_deploy:
+  - "make dist"
+  - export RELEASE_FILE=$(ls mondemand-*.tar.gz)
+
+deploy:
+  provider: releases
+  api_key:
+    secure: Ox6GMZpzHjoO2Vv65AgjsR/x1vClkOBEA//lFspVJwB7sIlmrruBuN3gLt2YZt0JD2i9wSf2HMyxDU/HHXv1WS4t8rIpOUk6oRW3ysmzG/sXjnZLX77kftcxrSuUthq40lIuhNVhIOY8psu9Fs7+c+bVYqPzmwYpHqWuc3/TY2UND/7zDrfPt7bj040oIJoezhz/HBC4JV6sGA/Dx10l36Zd+fEjNd7VklN/3HHra0dJsXCnp+xwKzFVtKSqnwTRkW7OpXVXnrBfLvMYwQAKQhs6PgJp4GMK+4ZStSq5EEl7ZLu9PprK+/xtn5CXpNgMW7Ap/qnERJl10w0cM91TPG84kvYgJBuUR9L17o0FwceCRF5bBtp9v12Ef9rAwX6rUs+haMAxC+Fk4I8BcFfgxFUg+AKe1ZOjxTRPmyUjDMKKn8KBBNA2G3uBLmekcMVCBkZGGU4JQUvoX2BE3dFfl5sTZHILDRB/ChmYC/lk96DgV8h6srpmrP1uvti88KOEdoVhYaRrDs2OZBj9URDtS3GOIKxueCZYoYZWYAHn69HEMWauYdC69yFJBrVLKCaMuoD3mEJPt4GbA1gw3+zLSK6dMkzLYaO+XJGsBd0pL3SyhcmnFPSwQEMZEygvt+DwWloAOxZ9lxx03BOJD6YYB/ozzVPHT7IMlfJVqfe33o4=
+  skip_cleanup: true
+  file:
+    - "${RELEASE_FILE}"
+  on:
+    repo: mondemand/mondemand
+    tags: true
