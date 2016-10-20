@@ -1,3 +1,7 @@
+Version 4.4.0 (molinaro)
+  * update dependendency on lwes to version 1.0.0, not a major version bump
+  here as we don't actually change anything other than the link.
+
 Version 4.3.1 (molinaro)
   * use travice for releases
   * switch from framewerk to pure autoconf for builds

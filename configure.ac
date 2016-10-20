@@ -1,5 +1,5 @@
 
-AC_INIT([mondemand], [4.3.1], [anthonym@alumni.caltech.edu])
+AC_INIT([mondemand], [4.4.0], [anthonym@alumni.caltech.edu])
 
 dnl -- we want a header to include in our source files with configure
 dnl dnl    info
@@ -56,7 +56,7 @@ AC_FUNC_MMAP
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(gettimeofday socket strerror)
 
-PKG_DEPS=lwes-0
+PKG_DEPS=lwes-1
 AC_SUBST(PKG_DEPS)
 PKG_CHECK_MODULES([LWES], [${PKG_DEPS}])
 AC_SUBST(LWES_CFLAGS)
