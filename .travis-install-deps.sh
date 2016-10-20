@@ -9,7 +9,7 @@ mkdir -p $srcdir
 export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$depdir/lib/pkgconfig
 
 # lwes
-LWES_VERSION=0.25.1
+LWES_VERSION=1.0.0
 
 cd $srcdir
 wget https://github.com/lwes/lwes/releases/download/${LWES_VERSION}/lwes-${LWES_VERSION}.tar.gz
