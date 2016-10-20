@@ -1,5 +1,5 @@
 
-AC_INIT([mondemand], [4.4.0], [anthonym@alumni.caltech.edu])
+AC_INIT([mondemand], [4.4.2], [anthonym@alumni.caltech.edu])
 
 dnl -- we want a header to include in our source files with configure
 dnl dnl    info

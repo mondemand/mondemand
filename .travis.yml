@@ -6,6 +6,7 @@ script:
   - bash ./.travis-build.sh
 
 before_deploy:
+  - "rm -f mondemand-*.tar.gz"
   - "make dist"
   - export RELEASE_FILE=$(ls mondemand-*.tar.gz)
 

@@ -1,3 +1,9 @@
+Version 4.4.2 (molinaro)
+  * travis funkiness
+
+Version 4.4.1 (molinaro)
+  * update lwes dep for travis
+
 Version 4.4.0 (molinaro)
   * update dependendency on lwes to version 1.0.0, not a major version bump
   here as we don't actually change anything other than the link.
