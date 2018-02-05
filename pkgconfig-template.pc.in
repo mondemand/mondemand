@@ -6,6 +6,6 @@ includedir=@includedir@
 Name: @PACKAGE@
 Description: @SHORT_DESC@
 Version: @PACKAGE_VERSION@
-Requires: @PKG_DEPS@
+Requires: @PACKAGE_DEPS@
 Libs: -L${libdir} -l@PACKAGE_NAME@
 Cflags: -I${includedir}/@PACKAGE_NAME@-@MAJOR_VERSION@

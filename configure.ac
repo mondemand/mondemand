@@ -1,5 +1,5 @@
 
-AC_INIT([mondemand], [4.4.2], [anthonym@alumni.caltech.edu])
+AC_INIT([mondemand], [4.4.3], [anthonym@alumni.caltech.edu])
 
 dnl -- we want a header to include in our source files with configure
 dnl dnl    info
@@ -20,6 +20,7 @@ MAJOR_VERSION_UNDERLINE=`echo "[$]MAJOR_VERSION" | perl -pe 'chomp; s/\W/_/g;'`
 PACKAGE_UNDERLINE=`echo "[$]PACKAGE_NAME" | perl -pe 'chomp; s/\W/_/g;'`
 PACKAGEPACKED=`echo "[$]PACKAGE_NAME" | perl -pe 'chomp; s/\W//g;'`
 VERSION_UNDERLINE=`echo "[$]PACKAGE_VERSION" | perl -pe 'chomp; s/\W/_/g;'`
+PACKAGE_DEPS=`echo "lwes-1"`
 
 AC_SUBST(MAJOR_VERSION)
 AC_SUBST(MINOR_VERSION)
@@ -30,6 +31,8 @@ AC_SUBST(MAJOR_VERSION_UNDERLINE)
 AC_SUBST(PACKAGE_UNDERLINE)
 AC_SUBST(PACKAGEPACKED)
 AC_SUBST(VERSION_UNDERLINE)
+
+AC_SUBST(PACKAGE_DEPS)
 
 dnl -- set maintainer mode
 AM_MAINTAINER_MODE
@@ -56,9 +59,7 @@ AC_FUNC_MMAP
 AC_FUNC_VPRINTF
 AC_CHECK_FUNCS(gettimeofday socket strerror)
 
-PKG_DEPS=lwes-1
-AC_SUBST(PKG_DEPS)
-PKG_CHECK_MODULES([LWES], [${PKG_DEPS}])
+PKG_CHECK_MODULES([LWES], [$PACKAGE_DEPS])
 AC_SUBST(LWES_CFLAGS)
 AC_SUBST(LWES_LIBS)
 

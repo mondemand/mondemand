@@ -1,3 +1,6 @@
+Version 4.4.3 (molinaro)
+  * bump to fix Centos 5 autoreconf issue
+
 Version 4.4.2 (molinaro)
   * travis funkiness
 
